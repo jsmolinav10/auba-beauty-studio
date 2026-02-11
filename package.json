@@ -1,0 +1,36 @@
+{
+  "name": "auba-beauty-studio",
+  "version": "1.0.0",
+  "description": "AUBA Beauty Studio — Estudio de uñas y estética. PWA con sistema de reservas online.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "generate-icons": "node generate-pwa-icons.js",
+    "test": "node test-auth.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "beauty",
+    "studio",
+    "pwa",
+    "booking"
+  ],
+  "author": "AUBA SAS",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "heic-convert": "^2.1.0",
+    "mysql2": "^3.16.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.13",
+    "sharp": "^0.34.5"
+  }
+}

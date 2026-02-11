@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2C2C3E" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png" />
+    <title>Portal Manicuristas | AUBA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --color-bg: #FFFFFF;
+            --color-accent: #D4AF37;
+            --color-text-main: #2C2C3E;
+            --color-text-secondary: #6E6E7A;
+            --color-success: #34C759;
+            --color-warning: #FF9500;
+            --color-error: #FF3B30;
+            --shadow-md: 0 8px 24px rgba(44, 44, 62, 0.08);
+            --radius-lg: 24px;
+            --radius-md: 12px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #F5F5F7;
+            margin: 0;
+            padding: 20px;
+            color: var(--color-text-main);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            max-width: 400px;
+            margin: 80px auto;
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+        }
+
+        .login-screen h1 {
+            margin-bottom: 24px;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #E5E5EA;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input {
+            padding-right: 45px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.6;
+        }
+
+        .password-toggle:hover {
+            opacity: 1;
+        }
+
+        .btn-primary {
+            background-color: var(--color-text-main);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 999px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-accent);
+        }
+
+        .error-msg {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid #ccc;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #f5f5f5;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: 2px solid #E5E5EA;
+            border-radius: 999px;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--color-accent);
+        }
+
+        .tab-btn.active {
+            background: var(--color-text-main);
+            color: white;
+            border-color: var(--color-text-main);
+        }
+
+        .tab-badge {
+            background: var(--color-warning);
+            color: white;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Sections */
+        .section {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .section h3 {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Booking Cards */
+        .bookings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .booking-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            border-left: 4px solid var(--color-accent);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .booking-card.pending {
+            border-left-color: var(--color-warning);
+            background: #FFFBF0;
+        }
+
+        .booking-card.in-progress {
+            border-left-color: #007AFF;
+            background: #F0F7FF;
+        }
+
+        .booking-card.confirmed {
+            border-left-color: var(--color-success);
+        }
+
+        .booking-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .booking-time {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--color-text-main);
+        }
+
+        .booking-details {
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        .booking-status {
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #FFF3CD;
+            color: #856404;
+        }
+
+        .status-confirmed {
+            background: #D4EDDA;
+            color: #155724;
+        }
+
+        .status-in-progress {
+            background: #CCE5FF;
+            color: #004085;
+        }
+
+        .status-completed {
+            background: #E2E3E5;
+            color: #383D41;
+        }
+
+        .status-no-show {
+            background: #F8D7DA;
+            color: #721C24;
+        }
+
+        .booking-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+
+        .action-btn.confirm {
+            background: var(--color-success);
+            color: white;
+        }
+
+        .action-btn.start {
+            background: #007AFF;
+            color: white;
+        }
+
+        .action-btn.complete {
+            background: var(--color-text-main);
+            color: white;
+        }
+
+        .action-btn.no-show {
+            background: var(--color-error);
+            color: white;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Calendar */
+        .simple-calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #eee;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        .day-cell.selected {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .day-cell:hover:not(.selected) {
+            background: #f0f0f0;
+        }
+
+        .day-cell.today {
+            border-color: var(--color-accent);
+            border-width: 2px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state p {
+            margin: 0;
+        }
+
+        @media (max-width: 600px) {
+            .booking-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .booking-actions {
+                width: 100%;
+            }
+
+            .action-btn {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Login View -->
+        <div id="login-view" class="login-screen">
+            <h1>🌸 Acceso Manicuristas</h1>
+            <form id="manicurist-login-form">
+                <div class="form-group">
+                    <label>Celular</label>
+                    <input type="tel" id="login-phone" placeholder="Ej: 3001234567" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="login-password" placeholder="******" required>
+                        <button type="button" class="password-toggle"
+                            onclick="togglePassword('login-password', this)">👁</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Ingresar</button>
+                <div id="login-error" class="error-msg"></div>
+            </form>
+            <div style="margin-top: 16px;">
+                <a href="index.html" style="font-size: 14px; color: #666;">Volver al sitio principal</a>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="dashboard">
+            <div class="header">
+                <h2 id="welcome-msg">Hola, Manicurista</h2>
+                <button id="btn-logout" class="logout-btn">Cerrar Sesión</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="pending">
+                    ⏳ Por Confirmar
+                    <span id="pending-count" class="tab-badge hidden">0</span>
+                </button>
+                <button class="tab-btn" data-tab="today">
+                    📅 Citas del Día
+                </button>
+                <button class="tab-btn" data-tab="calendar">
+                    🗓️ Mi Agenda
+                </button>
+            </div>
+
+            <!-- Tab: Pending Bookings -->
+            <div id="tab-pending" class="tab-content active">
+                <div class="section">
+                    <h3>⏳ Citas Pendientes de Confirmación</h3>
+                    <div id="pending-bookings" class="bookings-list">
+                        <div class="empty-state">
+                            <p>Cargando...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Today's Bookings -->
+            <div id="tab-today" class="tab-content">
+                <div class="section">
+                    <h3>📋 Citas de Hoy - <span id="today-date"></span></h3>
+                    <div id="today-bookings" class="bookings-list">
+                        <div class="empty-state">
+                            <p>Cargando...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Calendar -->
+            <div id="tab-calendar" class="tab-content">
+                <div class="section">
+                    <h3>🗓️ Mi Agenda</h3>
+                    <div class="simple-calendar" id="mini-calendar">
+                        <!-- Days injected by JS -->
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>Citas para <span id="selected-date-label">hoy</span></h3>
+                    <div id="calendar-bookings" class="bookings-list">
+                        <div class="empty-state">
+                            <p>Selecciona una fecha para ver tus citas.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/manicurist.js"></script>
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('✅ SW registrado:', reg.scope))
+                    .catch(err => console.log('SW falló:', err));
+            });
+        }
+    </script>
+</body>
+
+</html>

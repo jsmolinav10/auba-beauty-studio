@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Herramienta de Diagnóstico AUBA</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #333;
+            color: #0f0;
+        }
+
+        .success {
+            color: #0f0;
+        }
+
+        .error {
+            color: #f00;
+        }
+
+        .box {
+            border: 1px solid #555;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Diagnóstico de Sistema</h1>
+    <div id="log"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        const logEl = document.getElementById('log');
+
+        function log(msg, type = 'info') {
+            const el = document.createElement('div');
+            el.className = type;
+            el.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.appendChild(el);
+        }
+
+        async function runDiagnostics() {
+            log('Iniciando diagnóstico...');
+
+            // 1. Check LocalStorage
+            log('--- 1. Verificando Sesión Local ---');
+            const session = localStorage.getItem('auba_current_user');
+            if (session) {
+                log(`Sesión encontrada: ${session}`, 'success');
+                const user = JSON.parse(session);
+
+                // 2. Test API Connectivity
+                log('--- 2. Verificando Conexión API ---');
+                try {
+                    const res = await fetch(`${API_BASE}/services`);
+                    if (res.ok) {
+                        log('API responde correctamente (Servicios cargados)', 'success');
+
+                        // 3. Check User Bookings
+                        log(`--- 3. Buscando reservas para Usuario ID ${user.id} ---`);
+                        try {
+                            const bookRes = await fetch(`${API_BASE}/bookings/${user.id}`);
+                            const bookings = await bookRes.json();
+                            log(`Encontradas ${bookings.length} reservas en el servidor:`, 'info');
+                            bookings.forEach(b => {
+                                log(`- ID: ${b.id} | Fecha: ${b.booking_date} | Hora: ${b.booking_time} | Status: ${b.status}`);
+                            });
+                        } catch (e) {
+                            log('Error buscando reservas: ' + e.message, 'error');
+                        }
+
+                    } else {
+                        log('API error: ' + res.status, 'error');
+                    }
+                } catch (e) {
+                    log('ERROR FATAL: No se puede conectar al servidor (localhost:3000).', 'error');
+                    log('Asegurate de que "node server.js" esté corriendo.', 'error');
+                }
+
+            } else {
+                log('NO hay usuario logueado en este navegador. Por favor inicia sesión primero.', 'error');
+            }
+        }
+
+        runDiagnostics();
+    </script>
+</body>
+
+</html>

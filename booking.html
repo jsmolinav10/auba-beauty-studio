@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2C2C3E" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png" />
+    <title>Reserva tu Cita | AUBA</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --color-bg: #FFFFFF;
+            --color-bg-alt: #FFF0F5;
+            --color-text-main: #2C2C3E;
+            --color-text-secondary: #6E6E7A;
+            --color-accent: #D4AF37;
+            --color-brand-gradient: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%);
+            --color-success: #34C759;
+            --color-error: #FF3B30;
+            --spacing-md: 16px;
+            --spacing-lg: 32px;
+            --radius-md: 12px;
+            --radius-lg: 24px;
+            --shadow-sm: 0 4px 12px rgba(255, 182, 193, 0.15);
+            --shadow-md: 0 8px 24px rgba(44, 44, 62, 0.08);
+            --shadow-lg: 0 16px 40px rgba(44, 44, 62, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+
+        .booking-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .booking-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-link {
+            color: var(--color-text-secondary);
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--color-text-main);
+        }
+
+        .user-info {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+
+        .user-info strong {
+            color: var(--color-text-main);
+        }
+
+        .booking-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .booking-card h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            color: var(--color-text-main);
+        }
+
+        .booking-subtitle {
+            color: var(--color-text-secondary);
+            margin-bottom: 40px;
+        }
+
+        /* Auth Required Message */
+        .auth-required {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .auth-required h2 {
+            margin-bottom: 16px;
+            color: var(--color-text-main);
+        }
+
+        .auth-required p {
+            color: var(--color-text-secondary);
+            margin-bottom: 24px;
+        }
+
+        /* Progress Steps */
+        .progress-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #E5E5EA;
+            color: #6E6E7A;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .step.active .step-circle {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .step.completed .step-circle {
+            background: var(--color-success);
+            color: white;
+        }
+
+        .step.completed .step-circle::after {
+            content: "✓";
+        }
+
+        .step span {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        .step-line {
+            width: 40px;
+            height: 2px;
+            background: #E5E5EA;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #E5E5EA;
+            border-radius: 50%;
+            border-top-color: var(--color-accent);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-secondary);
+        }
+
+        /* Booking Steps */
+        .booking-step {
+            margin-bottom: 40px;
+        }
+
+        .booking-step h2 {
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+            color: var(--color-text-main);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Manicurists Grid */
+        .manicurists-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .manicurist-card {
+            border: 2px solid #E5E5EA;
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .manicurist-card:hover {
+            border-color: var(--color-accent);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .manicurist-card.selected {
+            border-color: var(--color-accent);
+            background: #FFF8F0;
+        }
+
+        .manicurist-avatar {
+            width: 80px;
+            height: 80px;
+            background: var(--color-brand-gradient);
+            border-radius: 50%;
+            margin: 0 auto 16px;
+        }
+
+        .manicurist-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .manicurist-card p {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        .available-badge {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--color-success);
+        }
+
+        /* Services Selection */
+        .services-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .service-selection-card {
+            border: 2px solid #E5E5EA;
+            border-radius: var(--radius-md);
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .service-selection-card:hover {
+            border-color: var(--color-accent);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .service-selection-card.selected {
+            border-color: var(--color-accent);
+            background: #FFF8F0;
+        }
+
+        .service-selection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .service-selection-card h3 {
+            font-size: 1.1rem;
+        }
+
+        .service-selection-price {
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        .service-selection-duration {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        /* Calendar Grid - Estilo Airbnb */
+        .calendar-container {
+            background: #f9f9f9;
+            padding: 24px;
+            border-radius: var(--radius-md);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header h3 {
+            font-size: 1.2rem;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .calendar-nav button {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .calendar-nav button:hover {
+            background: #f5f5f5;
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .calendar-weekday {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            padding: 8px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .date-card {
+            aspect-ratio: 1;
+            border: 1px solid #E5E5EA;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            position: relative;
+        }
+
+        .date-card.disabled {
+            background: #f5f5f5;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .date-card.available {
+            background: #E8F5E9;
+            border-color: var(--color-success);
+        }
+
+        .date-card.available:hover {
+            background: #C8E6C9;
+            transform: scale(1.05);
+        }
+
+        .date-card.selected {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            color: white;
+        }
+
+        .date-day {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* Time Slots */
+        .time-slots-container {
+            margin-top: 30px;
+        }
+
+        .time-slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .time-slot {
+            border: 2px solid #E5E5EA;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            font-weight: 500;
+        }
+
+        .time-slot:hover:not(.unavailable) {
+            border-color: var(--color-accent);
+            background: #FFF8F0;
+        }
+
+        .time-slot.selected {
+            border-color: var(--color-accent);
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .time-slot.unavailable {
+            background: #f5f5f5;
+            color: #ccc;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        /* Booking Summary */
+        .booking-summary {
+            background: #FFF8F0;
+            padding: 24px;
+            border-radius: var(--radius-md);
+            margin-top: 40px;
+        }
+
+        .booking-summary h3 {
+            margin-bottom: 16px;
+            font-size: 1.3rem;
+        }
+
+        .booking-summary ul {
+            list-style: none;
+            margin-bottom: 24px;
+        }
+
+        .booking-summary li {
+            padding: 12px 0;
+            border-bottom: 1px solid #E5E5EA;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .booking-summary li:last-child {
+            border-bottom: none;
+        }
+
+        .btn-primary {
+            background-color: var(--color-text-main);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 999px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--color-accent);
+            transform: scale(1.02);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Deposit Modal */
+        .deposit-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .deposit-modal-overlay.hidden {
+            display: none;
+        }
+
+        .deposit-modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: slideUp 0.4s ease;
+        }
+
+        .deposit-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: bounce 0.6s ease;
+        }
+
+        .deposit-modal-content h2 {
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+            color: var(--color-text-main);
+        }
+
+        .deposit-message {
+            color: var(--color-text-secondary);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .deposit-message strong {
+            color: var(--color-accent);
+            font-size: 1.3rem;
+        }
+
+        .deposit-benefits {
+            background: #FFF8F0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .benefit-item {
+            padding: 8px 0;
+            color: var(--color-text-main);
+            font-size: 15px;
+        }
+
+        .deposit-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-text-secondary);
+            padding: 12px 24px;
+            border: 1px solid #E5E5EA;
+            border-radius: 999px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+            border-color: var(--color-text-secondary);
+        }
+
+        /* Success Modal */
+        .success-modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .success-modal-content h2 {
+            color: var(--color-success);
+            margin-bottom: 16px;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: #FFEBEE;
+            color: var(--color-error);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .booking-card {
+                padding: 24px;
+            }
+
+            .progress-steps {
+                gap: 8px;
+            }
+
+            .step span {
+                display: none;
+            }
+
+            .calendar-grid {
+                gap: 4px;
+            }
+
+            .date-day {
+                font-size: 14px;
+            }
+
+            .deposit-modal-content {
+                padding: 30px 20px;
+            }
+
+            .deposit-icon {
+                font-size: 48px;
+            }
+        }
+
+        /* Multiple Services Selection */
+        .service-selection-card.selected {
+            border-color: var(--color-accent);
+            background: #FFF8F0;
+            position: relative;
+        }
+
+        .service-selection-card.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--color-accent);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .selected-services-summary {
+            background: #FFF8F0;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 24px;
+        }
+
+        .selected-services-summary h4 {
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .selected-services-summary ul {
+            list-style: none;
+            margin-bottom: 12px;
+        }
+
+        .selected-services-summary li {
+            padding: 8px 0;
+            border-bottom: 1px solid #E5E5EA;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .selected-services-summary li:last-child {
+            border-bottom: none;
+        }
+
+        .total-price {
+            text-align: right;
+            font-size: 1.1rem;
+            margin-top: 12px;
+            color: var(--color-text-main);
+        }
+
+        .total-price strong {
+            color: var(--color-accent);
+            font-size: 1.3rem;
+        }
+
+        .services-actions {
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        /* Back Navigation Button */
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .step-header h2 {
+            margin-bottom: 0;
+            flex-grow: 1;
+        }
+
+        .btn-back {
+            background: transparent;
+            border: 2px solid #E5E5EA;
+            color: var(--color-text-secondary);
+            padding: 10px 20px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn-back:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+            background: #FFF8F0;
+        }
+
+        .no-availability-message {
+            text-align: center;
+            padding: 40px 20px;
+            background: #FFF3CD;
+            border-radius: var(--radius-md);
+            margin-top: 20px;
+        }
+
+        .no-availability-message p {
+            color: #856404;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+
+<body class="booking-page">
+    <div class="booking-container">
+        <div class="booking-header">
+            <a href="index.html" class="back-link">← Volver al inicio</a>
+            <div class="user-info" id="user-info"></div>
+        </div>
+
+        <div class="booking-card">
+            <h1>Reserva tu Cita</h1>
+            <p class="booking-subtitle">Sigue los pasos para completar tu reserva</p>
+
+            <!-- Auth Required Message -->
+            <div id="auth-required" class="auth-required hidden">
+                <h2>🔐 Inicia Sesión para Reservar</h2>
+                <p>Necesitas iniciar sesión para poder agendar una cita.</p>
+                <button class="btn-primary" onclick="window.location.href='index.html?showLogin=true'"
+                    style="max-width: 300px; margin: 0 auto;">
+                    Iniciar Sesión
+                </button>
+            </div>
+
+            <!-- Main Booking Content -->
+            <div id="booking-content">
+                <!-- Progress Indicator (4 pasos) -->
+                <div class="progress-steps">
+                    <div class="step active" id="step-indicator-1">
+                        <div class="step-circle">1</div>
+                        <span>Manicurista</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" id="step-indicator-2">
+                        <div class="step-circle">2</div>
+                        <span>Servicio</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" id="step-indicator-3">
+                        <div class="step-circle">3</div>
+                        <span>Fecha</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" id="step-indicator-4">
+                        <div class="step-circle">4</div>
+                        <span>Hora</span>
+                    </div>
+                </div>
+
+                <!-- Step 1: Manicurists -->
+                <div class="booking-step" id="step-manicurists">
+                    <div class="step-header">
+                        <button class="btn-back" onclick="goBackFromStep(1)">← Cancelar</button>
+                        <h2>👩‍💼 Paso 1: Elige tu Manicurista</h2>
+                    </div>
+                    <div class="manicurists-grid" id="manicurists-list">
+                        <div class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p>Cargando manicuristas...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Services -->
+                <div class="booking-step hidden" id="step-services">
+                    <div class="step-header">
+                        <button class="btn-back" onclick="goBackFromStep(2)">← Volver</button>
+                        <h2>✨ Paso 2: Selecciona tu Servicio</h2>
+                    </div>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 20px;">Selecciona el servicio que
+                        deseas para tu cita.</p>
+                    <div class="services-selection-grid" id="services-selection">
+                        <div class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p>Cargando servicios...</p>
+                        </div>
+                    </div>
+
+                    <!-- Selected Services Summary -->
+                    <div id="selected-services-summary" class="selected-services-summary hidden">
+                        <h4>Servicios seleccionados:</h4>
+                        <ul id="selected-services-list"></ul>
+                        <p class="total-price">Total: <strong id="total-services-price">$0</strong></p>
+                    </div>
+
+                    <!-- Continue Button -->
+                    <div id="services-actions" class="services-actions hidden">
+                        <button id="btn-continue-to-date" class="btn-primary" style="max-width: 300px;">
+                            Continuar a elegir fecha →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Calendar -->
+                <div class="booking-step hidden" id="step-calendar">
+                    <div class="step-header">
+                        <button class="btn-back" onclick="goBackFromStep(3)">← Volver</button>
+                        <h2>📅 Paso 3: Selecciona una Fecha</h2>
+                    </div>
+                    <div class="calendar-container">
+                        <div class="calendar-header">
+                            <h3 id="calendar-month-year">Enero 2026</h3>
+                            <div class="calendar-nav">
+                                <button id="prev-month">◀</button>
+                                <button id="next-month">▶</button>
+                            </div>
+                        </div>
+                        <div class="calendar-weekdays">
+                            <div class="calendar-weekday">Dom</div>
+                            <div class="calendar-weekday">Lun</div>
+                            <div class="calendar-weekday">Mar</div>
+                            <div class="calendar-weekday">Mié</div>
+                            <div class="calendar-weekday">Jue</div>
+                            <div class="calendar-weekday">Vie</div>
+                            <div class="calendar-weekday">Sáb</div>
+                        </div>
+                        <div class="calendar-grid" id="calendar-dates">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Time Slots -->
+                <div class="booking-step hidden" id="step-time">
+                    <div class="step-header">
+                        <button class="btn-back" onclick="goBackFromStep(4)">← Volver</button>
+                        <h2>🕐 Paso 4: Selecciona la Hora</h2>
+                    </div>
+                    <p id="duration-info" style="color: var(--color-text-secondary); margin-bottom: 16px;">Duración del
+                        servicio: 1 hora</p>
+                    <div class="time-slots-container">
+                        <div class="time-slots-grid" id="time-slots">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary & Confirm -->
+                <div class="booking-summary hidden" id="booking-summary">
+                    <h3>📋 Resumen de tu Reserva</h3>
+                    <div id="booking-error" class="error-message hidden"></div>
+                    <ul id="summary-details"></ul>
+                    <button id="btn-confirm" class="btn-primary">Confirmar Reserva</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Abono -->
+    <div id="deposit-modal" class="deposit-modal-overlay hidden">
+        <div class="deposit-modal-content">
+            <div class="deposit-icon">💳</div>
+            <h2>Confirma tu Reserva</h2>
+            <p class="deposit-message">
+                Para garantizar tu cita y brindarte un servicio excepcional, requerimos un abono de
+                <strong>$20.000</strong> que será descontado del valor total de tu servicio.
+            </p>
+            <div class="deposit-benefits">
+                <div class="benefit-item">
+                    ✓ Cita 100% garantizada
+                </div>
+                <div class="benefit-item">
+                    ✓ Abono descontable del total
+                </div>
+                <div class="benefit-item">
+                    ✓ Atención personalizada
+                </div>
+            </div>
+            <div class="deposit-actions">
+                <button id="btn-continue-booking" class="btn-primary">Entendido, Continuar</button>
+                <button id="btn-cancel-booking" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Éxito -->
+    <div id="success-modal" class="deposit-modal-overlay hidden">
+        <div class="success-modal-content">
+            <div class="success-icon">✅</div>
+            <h2>¡Reserva Confirmada!</h2>
+            <p class="deposit-message" id="success-message"></p>
+            <button class="btn-primary" onclick="window.location.href='index.html'">Volver al Inicio</button>
+        </div>
+    </div>
+
+    <script>
+        // ===========================================
+        // CONFIGURATION
+        // ===========================================
+        const API_BASE = 'http://localhost:3000/api';
+        const SESSION_KEY = 'auba_current_user';
+
+        const TIME_SLOTS = [
+            "09:00", "10:00", "11:00", "12:00",
+            "14:00", "15:00", "16:00", "17:00", "18:00"
+        ];
+
+        // ===========================================
+        // STATE
+        // ===========================================
+        let manicurists = [];
+        let services = [];
+        let occupiedSlots = [];
+        let selectedServices = []; // Array para múltiples servicios
+        let bookingData = {
+            manicurist: null,
+            services: [], // Ahora es un array
+            date: null,
+            time: null
+        };
+
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let depositModalShown = false;
+
+        // ===========================================
+        // INITIALIZATION
+        // ===========================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check authentication
+            const user = getCurrentUser();
+            if (!user) {
+                document.getElementById('booking-content').classList.add('hidden');
+                document.getElementById('auth-required').classList.remove('hidden');
+                return;
+            }
+
+            // Show user info
+            document.getElementById('user-info').innerHTML = `
+                Hola, <strong>${user.name}</strong>
+            `;
+
+            // Check if deposit modal should show
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('showDeposit') === 'true' && !depositModalShown) {
+                setTimeout(() => showDepositModal(), 500);
+            }
+
+            // Load data from API
+            await loadManicurists();
+            await loadServices();
+            renderCalendar();
+            setupCalendarNavigation();
+            setupConfirmButton();
+            setupDepositModal();
+            setupServicesButton();
+        });
+
+        // ===========================================
+        // AUTH HELPERS
+        // ===========================================
+        function getCurrentUser() {
+            const session = sessionStorage.getItem(SESSION_KEY);
+            return session ? JSON.parse(session) : null;
+        }
+
+        // ===========================================
+        // API CALLS
+        // ===========================================
+        async function loadManicurists() {
+            try {
+                const response = await fetch(`${API_BASE}/manicurists`);
+                manicurists = await response.json();
+                renderManicurists();
+            } catch (error) {
+                console.error('Error loading manicurists:', error);
+                document.getElementById('manicurists-list').innerHTML = `
+                    <div class="error-message">Error cargando manicuristas. Verifica que el servidor esté activo.</div>
+                `;
+            }
+        }
+
+        async function loadServices() {
+            try {
+                const response = await fetch(`${API_BASE}/services`);
+                services = await response.json();
+                renderServices();
+            } catch (error) {
+                console.error('Error loading services:', error);
+                document.getElementById('services-selection').innerHTML = `
+                    <div class="error-message">Error cargando servicios. Verifica que el servidor esté activo.</div>
+                `;
+            }
+        }
+
+        async function checkAvailability(manicuristId, date) {
+            try {
+                const response = await fetch(`${API_BASE}/availability/${manicuristId}/${date}`);
+                const data = await response.json();
+                occupiedSlots = data.occupiedSlots || [];
+                renderTimeSlots();
+            } catch (error) {
+                console.error('Error checking availability:', error);
+                occupiedSlots = [];
+                renderTimeSlots();
+            }
+        }
+
+        async function createBooking() {
+            const user = getCurrentUser();
+            if (!user) {
+                showError('Debes iniciar sesión para reservar.');
+                return;
+            }
+
+            if (bookingData.services.length === 0) {
+                showError('Por favor selecciona al menos un servicio.');
+                return;
+            }
+
+            try {
+                document.getElementById('btn-confirm').disabled = true;
+                document.getElementById('btn-confirm').innerHTML = '<span class="loading-spinner"></span> Procesando...';
+
+                // Create a booking for each selected service
+                const results = [];
+                for (const service of bookingData.services) {
+                    const payload = {
+                        user_id: user.id,
+                        manicurist_id: bookingData.manicurist.id,
+                        service_id: service.id,
+                        booking_date: bookingData.date,
+                        booking_time: bookingData.time + ':00'
+                    };
+
+                    const response = await fetch(`${API_BASE}/bookings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+                    results.push({ service: service.title, result });
+                }
+
+                // Check if all bookings were successful
+                const allSuccess = results.every(r => r.result.success);
+                if (allSuccess) {
+                    showSuccessModal();
+                } else {
+                    const failedServices = results.filter(r => !r.result.success).map(r => r.service).join(', ');
+                    showError(`Error al reservar: ${failedServices}`);
+                    document.getElementById('btn-confirm').disabled = false;
+                    document.getElementById('btn-confirm').textContent = 'Confirmar Reserva';
+                }
+            } catch (error) {
+                console.error('Error creating booking:', error);
+                showError('Error de conexión. Verifica que el servidor esté activo.');
+                document.getElementById('btn-confirm').disabled = false;
+                document.getElementById('btn-confirm').textContent = 'Confirmar Reserva';
+            }
+        }
+
+        function setupServicesButton() {
+            const btn = document.getElementById('btn-continue-to-date');
+            if (btn) {
+                btn.addEventListener('click', continueToDate);
+            }
+        }
+
+        // ===========================================
+        // RENDER FUNCTIONS
+        // ===========================================
+        function renderManicurists() {
+            const container = document.getElementById('manicurists-list');
+
+            if (manicurists.length === 0) {
+                container.innerHTML = '<p style="color: var(--color-text-secondary);">No hay manicuristas disponibles.</p>';
+                return;
+            }
+
+            container.innerHTML = manicurists.map(m => `
+                <div class="manicurist-card" data-id="${m.id}">
+                    <div class="manicurist-avatar"></div>
+                    <h3>${m.name}</h3>
+                    <p>${m.specialty || 'Especialista'}</p>
+                    <span class="available-badge">● Disponible</span>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.manicurist-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const id = parseInt(card.dataset.id);
+                    selectManicurist(id);
+                });
+            });
+        }
+
+        function renderServices() {
+            const container = document.getElementById('services-selection');
+
+            if (services.length === 0) {
+                container.innerHTML = '<p style="color: var(--color-text-secondary);">No hay servicios disponibles.</p>';
+                return;
+            }
+
+            container.innerHTML = services.map(s => `
+                <div class="service-selection-card" data-id="${s.id}">
+                    <div class="service-selection-header">
+                        <h3>${s.title}</h3>
+                        <span class="service-selection-price">$${Number(s.price).toLocaleString('es-CO')}</span>
+                    </div>
+                    <p class="service-selection-duration">Duración: ${s.duration} min</p>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.service-selection-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const id = parseInt(card.dataset.id);
+                    selectService(id);
+                });
+            });
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('calendar-dates');
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const startingDayOfWeek = firstDay.getDay();
+            const monthDays = lastDay.getDate();
+
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            document.getElementById('calendar-month-year').textContent = `${months[currentMonth]} ${currentYear}`;
+
+            let html = '';
+
+            // Empty cells before first day
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                html += '<div class="date-card disabled"></div>';
+            }
+
+            // Days of the month
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            for (let day = 1; day <= monthDays; day++) {
+                const date = new Date(currentYear, currentMonth, day);
+                const isPast = date < today;
+                const isSunday = date.getDay() === 0;
+                const isAvailable = !isPast && !isSunday;
+
+                const classes = ['date-card'];
+                if (isPast || isSunday) classes.push('disabled');
+                if (isAvailable) classes.push('available');
+
+                html += `
+                    <div class="${classes.join(' ')}" data-date="${date.toISOString().split('T')[0]}" ${isAvailable ? '' : 'style="pointer-events:none"'}>
+                        <div class="date-day">${day}</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+
+            document.querySelectorAll('.date-card.available').forEach(card => {
+                card.addEventListener('click', () => {
+                    const dateStr = card.dataset.date;
+                    selectDate(dateStr);
+                });
+            });
+        }
+
+        function renderTimeSlots() {
+            const container = document.getElementById('time-slots');
+
+            // Check how many slots are available
+            const availableSlots = TIME_SLOTS.filter(time => !isTimeOccupied(time));
+
+            // If no slots available, show message with back button
+            if (availableSlots.length === 0) {
+                container.innerHTML = `
+                    <div class="no-availability-message">
+                        <p>😔 No hay horas disponibles para este día.</p>
+                        <button class="btn-primary" style="max-width: 300px;" onclick="goBackFromStep(4)">
+                            ← Escoger otro día
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = TIME_SLOTS.map(time => {
+                const isOccupied = isTimeOccupied(time);
+                const classes = ['time-slot'];
+                if (isOccupied) classes.push('unavailable');
+
+                return `
+                    <div class="${classes.join(' ')}" data-time="${time}" ${isOccupied ? '' : ''}>
+                        ${time}
+                    </div>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.time-slot:not(.unavailable)').forEach(slot => {
+                slot.addEventListener('click', () => {
+                    const time = slot.dataset.time;
+                    selectTime(time);
+                });
+            });
+        }
+
+        function isTimeOccupied(time) {
+            const timeMinutes = timeToMinutes(time);
+
+            for (const occupied of occupiedSlots) {
+                const occupiedStart = timeToMinutes(occupied.start.substring(0, 5));
+                const occupiedEnd = occupiedStart + occupied.duration;
+
+                // Check if there's overlap (assuming service takes 2 hours as per server logic)
+                if (timeMinutes >= occupiedStart && timeMinutes < occupiedEnd) {
+                    return true;
+                }
+
+                // Also check if our service would extend into the occupied slot
+                const totalDuration = getTotalServicesDuration();
+                const ourEnd = timeMinutes + totalDuration;
+                if (timeMinutes < occupiedEnd && ourEnd > occupiedStart) {
+                    return true;
+                }
+            }
+
+            // Check if there's enough time before closing (18:00 = 1080 minutes is last slot, work ends at 20:00 = 1200)
+            const closingTime = 20 * 60; // 8 PM = 1200 minutes
+            const totalDuration = getTotalServicesDuration();
+            const slotEnd = timeToMinutes(time) + totalDuration;
+            if (slotEnd > closingTime) {
+                return true;
+            }
+
+            return false;
+        }
+
+        function getTotalServicesDuration() {
+            if (selectedServices.length === 0) return 120; // Default 2 hours
+            return selectedServices.reduce((sum, s) => sum + Number(s.duration), 0);
+        }
+
+        function timeToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        function updateSummary() {
+            const summaryEl = document.getElementById('booking-summary');
+            const detailsEl = document.getElementById('summary-details');
+            const user = getCurrentUser();
+
+            if (!bookingData.manicurist || !bookingData.date || !bookingData.time || selectedServices.length === 0) {
+                summaryEl.classList.add('hidden');
+                return;
+            }
+
+            // Build services list HTML
+            const servicesHtml = selectedServices.map(s =>
+                `<li><strong>Servicio:</strong> ${s.title} - $${Number(s.price).toLocaleString('es-CO')}</li>`
+            ).join('');
+
+            const totalPrice = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
+            const totalDuration = getTotalServicesDuration();
+
+            detailsEl.innerHTML = `
+                <li><strong>Cliente:</strong> ${user ? user.name : 'N/A'}</li>
+                <li><strong>Teléfono:</strong> ${user ? user.phone : 'N/A'}</li>
+                <li><strong>Manicurista:</strong> ${bookingData.manicurist.name}</li>
+                ${servicesHtml}
+                <li><strong>Fecha:</strong> ${bookingData.date}</li>
+                <li><strong>Hora:</strong> ${bookingData.time}</li>
+                <li><strong>Duración Total:</strong> ${totalDuration} minutos</li>
+                <li><strong>Total a Pagar:</strong> $${totalPrice.toLocaleString('es-CO')}</li>
+            `;
+
+            summaryEl.classList.remove('hidden');
+            summaryEl.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ===========================================
+        // SELECTION HANDLERS
+        // ===========================================
+        function selectManicurist(id) {
+            bookingData.manicurist = manicurists.find(m => m.id === id);
+            document.querySelectorAll('.manicurist-card').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.manicurist-card[data-id="${id}"]`).classList.add('selected');
+            updateProgress(1);
+            showStep('step-services');
+        }
+
+        function selectService(id) {
+            const service = services.find(s => s.id === id);
+            const card = document.querySelector(`.service-selection-card[data-id="${id}"]`);
+
+            // Toggle selection
+            const index = selectedServices.findIndex(s => s.id === id);
+            if (index > -1) {
+                // Remove from selection
+                selectedServices.splice(index, 1);
+                card.classList.remove('selected');
+            } else {
+                // Add to selection
+                selectedServices.push(service);
+                card.classList.add('selected');
+            }
+
+            // Update bookingData
+            bookingData.services = [...selectedServices];
+
+            // Update UI
+            updateSelectedServicesSummary();
+        }
+
+        function updateSelectedServicesSummary() {
+            const summaryContainer = document.getElementById('selected-services-summary');
+            const listContainer = document.getElementById('selected-services-list');
+            const totalPriceEl = document.getElementById('total-services-price');
+            const actionsContainer = document.getElementById('services-actions');
+
+            if (selectedServices.length === 0) {
+                summaryContainer.classList.add('hidden');
+                actionsContainer.classList.add('hidden');
+                return;
+            }
+
+            // Show summary
+            summaryContainer.classList.remove('hidden');
+            actionsContainer.classList.remove('hidden');
+
+            // Render list
+            listContainer.innerHTML = selectedServices.map(s => `
+                <li>
+                    <span>${s.title}</span>
+                    <span>$${Number(s.price).toLocaleString('es-CO')}</span>
+                </li>
+            `).join('');
+
+            // Calculate total
+            const total = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
+            totalPriceEl.textContent = '$' + total.toLocaleString('es-CO');
+
+            // Calculate total duration
+            const totalDuration = selectedServices.reduce((sum, s) => sum + Number(s.duration), 0);
+            document.getElementById('duration-info').textContent =
+                `Duración total estimada: ${totalDuration} minutos`;
+        }
+
+        function continueToDate() {
+            if (selectedServices.length === 0) {
+                alert('Por favor selecciona al menos un servicio.');
+                return;
+            }
+            updateProgress(2);
+            showStep('step-calendar');
+        }
+
+        async function selectDate(dateStr) {
+            bookingData.date = dateStr;
+            bookingData.time = null; // Reset time when date changes
+
+            document.querySelectorAll('.date-card').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.date-card[data-date="${dateStr}"]`).classList.add('selected');
+
+            // Load availability for this date and manicurist
+            await checkAvailability(bookingData.manicurist.id, dateStr);
+
+            updateProgress(3);
+            showStep('step-time');
+        }
+
+        function selectTime(time) {
+            bookingData.time = time;
+            document.querySelectorAll('.time-slot').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.time-slot[data-time="${time}"]`).classList.add('selected');
+            updateProgress(4);
+            updateSummary();
+        }
+
+        // ===========================================
+        // UI HELPERS
+        // ===========================================
+        function updateProgress(step) {
+            for (let i = 1; i <= 4; i++) {
+                const indicator = document.getElementById(`step-indicator-${i}`);
+                if (i < step) {
+                    indicator.classList.add('completed');
+                    indicator.classList.remove('active');
+                } else if (i === step) {
+                    indicator.classList.add('active');
+                    indicator.classList.remove('completed');
+                } else {
+                    indicator.classList.remove('active', 'completed');
+                }
+            }
+        }
+
+        function showStep(stepId) {
+            document.querySelectorAll('.booking-step').forEach(s => s.classList.add('hidden'));
+            document.getElementById(stepId).classList.remove('hidden');
+            // Scroll al paso
+            document.getElementById(stepId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Función para navegar hacia atrás en el flujo
+        function goBackFromStep(currentStep) {
+            switch (currentStep) {
+                case 1:
+                    // Desde paso 1, salir de reservas
+                    window.location.href = 'index.html';
+                    break;
+                case 2:
+                    // Desde paso 2, volver a manicuristas
+                    updateProgress(1);
+                    showStep('step-manicurists');
+                    // Limpiar selección de servicios
+                    selectedServices = [];
+                    bookingData.services = [];
+                    document.querySelectorAll('.service-selection-card').forEach(c => c.classList.remove('selected'));
+                    updateSelectedServicesSummary();
+                    break;
+                case 3:
+                    // Desde paso 3, volver a servicios
+                    updateProgress(2);
+                    showStep('step-services');
+                    // Limpiar fecha seleccionada
+                    bookingData.date = null;
+                    document.querySelectorAll('.date-card').forEach(c => c.classList.remove('selected'));
+                    break;
+                case 4:
+                    // Desde paso 4, volver a calendario
+                    updateProgress(3);
+                    showStep('step-calendar');
+                    // Limpiar hora seleccionada y ocultar resumen
+                    bookingData.time = null;
+                    document.querySelectorAll('.time-slot').forEach(c => c.classList.remove('selected'));
+                    document.getElementById('booking-summary').classList.add('hidden');
+                    break;
+            }
+        }
+
+        function showBookingSummary() {
+            // This function is replaced by updateSummary() which handles multiple services
+            updateSummary();
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('booking-error');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('booking-error').classList.add('hidden');
+        }
+
+        // ===========================================
+        // MODALS
+        // ===========================================
+        function setupDepositModal() {
+            document.getElementById('btn-continue-booking').addEventListener('click', () => {
+                depositModalShown = true;
+                hideDepositModal();
+            });
+
+            document.getElementById('btn-cancel-booking').addEventListener('click', () => {
+                hideDepositModal();
+                window.location.href = 'index.html';
+            });
+        }
+
+        function showDepositModal() {
+            document.getElementById('deposit-modal').classList.remove('hidden');
+        }
+
+        function hideDepositModal() {
+            document.getElementById('deposit-modal').classList.add('hidden');
+        }
+
+        function showSuccessModal() {
+            const formattedDate = new Date(bookingData.date + 'T12:00:00').toLocaleDateString('es-ES', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+            const servicesList = selectedServices.map(s => s.title).join(', ');
+            const totalPrice = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
+
+            document.getElementById('success-message').innerHTML = `
+                Tu cita con <strong>${bookingData.manicurist.name}</strong> para 
+                <strong>${servicesList}</strong> ha sido agendada para el 
+                <strong>${formattedDate}</strong> a las <strong>${bookingData.time}</strong>.<br><br>
+                Total: <strong>$${totalPrice.toLocaleString('es-CO')}</strong><br>
+                Recuerda realizar el abono de <strong>$20.000</strong> para garantizar tu cita.
+            `;
+            document.getElementById('success-modal').classList.remove('hidden');
+        }
+
+        // ===========================================
+        // CALENDAR NAVIGATION
+        // ===========================================
+        function setupCalendarNavigation() {
+            document.getElementById('prev-month').addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                renderCalendar();
+            });
+
+            document.getElementById('next-month').addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                renderCalendar();
+            });
+        }
+
+        // ===========================================
+        // CONFIRM BOOKING
+        // ===========================================
+        function setupConfirmButton() {
+            document.getElementById('btn-confirm').addEventListener('click', async () => {
+                // Verificar si ePayco está configurado
+                const currentUser = JSON.parse(sessionStorage.getItem(SESSION_KEY) || '{}');
+                const totalPrice = bookingData.services.reduce((sum, s) => sum + parseFloat(s.price), 0);
+                const depositAmount = Math.round(totalPrice * 0.30); // 30% de depósito
+
+                // Si hay configuración de ePayco y el monto es > 0, procesar pago
+                if (typeof EpaycoPayments !== 'undefined' && depositAmount > 0) {
+                    try {
+                        // Obtener config de ePayco del servidor
+                        const configRes = await fetch(`${API_BASE}/payments/config`);
+                        const config = await configRes.json();
+
+                        if (config.publicKey) {
+                            EpaycoPayments.init(config.publicKey, config.testMode);
+
+                            EpaycoPayments.openCheckout({
+                                amount: depositAmount,
+                                description: `Depósito Reserva AUBA - ${bookingData.services.map(s => s.title).join(', ')}`,
+                                invoiceNumber: `AUBA-${Date.now()}`,
+                                customerName: currentUser.name || 'Cliente',
+                                customerEmail: currentUser.email || 'cliente@auba.com',
+                                customerPhone: currentUser.phone || ''
+                            },
+                                // onSuccess
+                                (result) => {
+                                    console.log('Pago exitoso:', result);
+                                    createBooking();
+                                },
+                                // onError
+                                (error) => {
+                                    console.error('Error en pago:', error);
+                                    alert('El pago no se completó. Por favor intenta de nuevo.');
+                                });
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error obteniendo config de pagos:', error);
+                    }
+                }
+
+                // Si no hay ePayco configurado, crear reserva directamente
+                createBooking();
+            });
+        }
+    </script>
+
+    <!-- ePayco SDK -->
+    <script src="https://checkout.epayco.co/checkout.js"></script>
+    <!-- Payments Module -->
+    <script src="js/payments.js"></script>
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('✅ SW registrado:', reg.scope))
+                    .catch(err => console.log('SW falló:', err));
+            });
+        }
+    </script>
+</body>
+
+</html>
