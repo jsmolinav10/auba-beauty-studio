@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página no encontrada | AUBA Beauty Studio</title>
+    <link rel="icon" type="image/png" href="/assets/Logo Auba.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2C2C3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1D1D1F 0%, #2C2C3E 50%, #1D1D1F 100%);
+            color: #F5F5F7;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 480px;
+        }
+
+        .error-code {
+            font-size: 8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #D4A574, #C49B6C);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: #F5F5F7;
+        }
+
+        p {
+            color: #86868B;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .btn-home {
+            display: inline-block;
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #D4A574, #C49B6C);
+            color: #1D1D1F;
+            text-decoration: none;
+            border-radius: 999px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(212, 165, 116, 0.3);
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 2rem;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <img src="/assets/Logo Auba.png" alt="AUBA" class="logo">
+        <div class="error-code">404</div>
+        <h1>Página no encontrada</h1>
+        <p>La página que buscas no existe o ha sido movida.
+            Vuelve al inicio para encontrar lo que necesitas.</p>
+        <a href="/index.html" class="btn-home">Volver al Inicio</a>
+    </div>
+</body>
+
+</html>

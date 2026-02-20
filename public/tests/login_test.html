@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Login - Portal Manicuristas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .test-card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-card p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .credentials {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin-bottom: 20px;
+        }
+
+        .credentials strong {
+            color: #333;
+        }
+
+        .btn-test {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-test:hover {
+            background: #45a049;
+        }
+
+        .btn-test.secondary {
+            background: #2196F3;
+        }
+
+        .btn-test.secondary:hover {
+            background: #1976D2;
+        }
+
+        .btn-test.danger {
+            background: #f44336;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.success {
+            background: #E8F5E9;
+            color: #2E7D32;
+            display: block;
+        }
+
+        .result.error {
+            background: #FFEBEE;
+            color: #C62828;
+            display: block;
+        }
+
+        .result.info {
+            background: #E3F2FD;
+            color: #1565C0;
+            display: block;
+        }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checklist li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .check-icon.pending {
+            background: #FFF3E0;
+            color: #E65100;
+        }
+
+        .check-icon.pass {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .check-icon.fail {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧪 Pruebas de Login - Portal Manicuristas</h1>
+
+        <!-- Test 1: API Connectivity -->
+        <div class="test-card">
+            <h2>📡 Test 1: Conexión con el Servidor</h2>
+            <p>Verifica que el servidor Node.js esté corriendo y responda correctamente.</p>
+            <button class="btn-test" onclick="testServerConnection()">Probar Conexión</button>
+            <div id="result-server" class="result"></div>
+        </div>
+
+        <!-- Test 2: Valid Login -->
+        <div class="test-card">
+            <h2>✅ Test 2: Login con Credenciales Válidas</h2>
+            <p>Prueba el login con las credenciales correctas de María González.</p>
+            <div class="credentials">
+                <strong>Teléfono:</strong> 3001234567<br>
+                <strong>Contraseña:</strong> auba2026
+            </div>
+            <button class="btn-test" onclick="testValidLogin()">Probar Login Válido</button>
+            <div id="result-valid" class="result"></div>
+        </div>
+
+        <!-- Test 3: Invalid Login -->
+        <div class="test-card">
+            <h2>❌ Test 3: Login con Credenciales Inválidas</h2>
+            <p>Prueba el login con una contraseña incorrecta (debe fallar).</p>
+            <div class="credentials">
+                <strong>Teléfono:</strong> 3001234567<br>
+                <strong>Contraseña:</strong> contraseña_incorrecta
+            </div>
+            <button class="btn-test secondary" onclick="testInvalidLogin()">Probar Login Inválido</button>
+            <div id="result-invalid" class="result"></div>
+        </div>
+
+        <!-- Test 4: All Manicurists -->
+        <div class="test-card">
+            <h2>👩‍💼 Test 4: Login de Todas las Manicuristas</h2>
+            <p>Prueba el login de las 3 manicuristas registradas.</p>
+            <button class="btn-test" onclick="testAllManicurists()">Probar Todas</button>
+            <div id="result-all" class="result"></div>
+        </div>
+
+        <!-- Summary -->
+        <div class="test-card">
+            <h2>📋 Resumen de Pruebas</h2>
+            <ul class="checklist" id="checklist">
+                <li>
+                    <span class="check-icon pending" id="check-1">⏳</span>
+                    <span>Conexión al servidor</span>
+                </li>
+                <li>
+                    <span class="check-icon pending" id="check-2">⏳</span>
+                    <span>Login válido (María González)</span>
+                </li>
+                <li>
+                    <span class="check-icon pending" id="check-3">⏳</span>
+                    <span>Login inválido rechazado</span>
+                </li>
+                <li>
+                    <span class="check-icon pending" id="check-4">⏳</span>
+                    <span>Login de todas las manicuristas</span>
+                </li>
+            </ul>
+            <button class="btn-test" onclick="runAllTests()" style="margin-top: 20px;">🚀 Ejecutar Todas las
+                Pruebas</button>
+        </div>
+
+        <!-- Open Portal -->
+        <div class="test-card">
+            <h2>🔗 Acceso Directo al Portal</h2>
+            <p>Abre el portal de manicuristas para probarlo manualmente.</p>
+            <button class="btn-test secondary" onclick="window.open('manicurist.html', '_blank')">Abrir Portal de
+                Manicuristas</button>
+            <button class="btn-test secondary" onclick="window.open('index.html', '_blank')">Abrir Sitio
+                Principal</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        function showResult(elementId, type, message) {
+            const el = document.getElementById(elementId);
+            el.className = `result ${type}`;
+            el.innerHTML = message;
+        }
+
+        function updateCheck(checkId, status) {
+            const el = document.getElementById(checkId);
+            if (status === 'pass') {
+                el.className = 'check-icon pass';
+                el.textContent = '✓';
+            } else if (status === 'fail') {
+                el.className = 'check-icon fail';
+                el.textContent = '✗';
+            } else {
+                el.className = 'check-icon pending';
+                el.textContent = '⏳';
+            }
+        }
+
+        async function testServerConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/manicurists`);
+                const data = await response.json();
+
+                if (Array.isArray(data)) {
+                    showResult('result-server', 'success',
+                        `✅ <strong>Conexión exitosa!</strong><br>
+                        El servidor está corriendo.<br>
+                        Manicuristas encontradas: ${data.length}<br>
+                        <small>${data.map(m => m.name).join(', ')}</small>`
+                    );
+                    updateCheck('check-1', 'pass');
+                    return true;
+                }
+            } catch (error) {
+                showResult('result-server', 'error',
+                    `❌ <strong>Error de conexión</strong><br>
+                    No se pudo conectar al servidor.<br>
+                    <small>Asegúrate de que el servidor esté corriendo con: <code>node server.js</code></small>`
+                );
+                updateCheck('check-1', 'fail');
+                return false;
+            }
+        }
+
+        async function testValidLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/manicurist/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: '3001234567',
+                        password: 'auba2026'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResult('result-valid', 'success',
+                        `✅ <strong>Login exitoso!</strong><br>
+                        Usuario: ${data.user.name}<br>
+                        ID: ${data.user.id}<br>
+                        Rol: ${data.user.role}`
+                    );
+                    updateCheck('check-2', 'pass');
+                    return true;
+                } else {
+                    showResult('result-valid', 'error',
+                        `❌ <strong>Login fallido</strong><br>
+                        Error: ${data.error}`
+                    );
+                    updateCheck('check-2', 'fail');
+                    return false;
+                }
+            } catch (error) {
+                showResult('result-valid', 'error',
+                    `❌ <strong>Error de conexión</strong><br>${error.message}`
+                );
+                updateCheck('check-2', 'fail');
+                return false;
+            }
+        }
+
+        async function testInvalidLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/manicurist/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: '3001234567',
+                        password: 'contraseña_incorrecta'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    showResult('result-invalid', 'success',
+                        `✅ <strong>Prueba exitosa!</strong><br>
+                        El sistema rechazó correctamente las credenciales inválidas.<br>
+                        Mensaje: ${data.error}`
+                    );
+                    updateCheck('check-3', 'pass');
+                    return true;
+                } else {
+                    showResult('result-invalid', 'error',
+                        `❌ <strong>Problema de seguridad!</strong><br>
+                        El sistema aceptó credenciales inválidas.`
+                    );
+                    updateCheck('check-3', 'fail');
+                    return false;
+                }
+            } catch (error) {
+                showResult('result-invalid', 'info',
+                    `ℹ️ <strong>Error de conexión</strong><br>${error.message}`
+                );
+                updateCheck('check-3', 'fail');
+                return false;
+            }
+        }
+
+        async function testAllManicurists() {
+            const manicurists = [
+                { phone: '3001234567', name: 'María González' },
+                { phone: '3007654321', name: 'Camila Rodríguez' },
+                { phone: '3009876543', name: 'Sofía Martínez' }
+            ];
+
+            let results = [];
+            let allPassed = true;
+
+            for (const m of manicurists) {
+                try {
+                    const response = await fetch(`${API_BASE}/auth/manicurist/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            phone: m.phone,
+                            password: 'auba2026'
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        results.push(`✅ ${m.name} (${m.phone}) - Login exitoso`);
+                    } else {
+                        results.push(`❌ ${m.name} (${m.phone}) - Error: ${data.error}`);
+                        allPassed = false;
+                    }
+                } catch (error) {
+                    results.push(`❌ ${m.name} (${m.phone}) - Error de conexión`);
+                    allPassed = false;
+                }
+            }
+
+            showResult('result-all', allPassed ? 'success' : 'error',
+                `<strong>${allPassed ? '✅ Todas las manicuristas pueden acceder' : '❌ Algunos logins fallaron'}</strong><br><br>
+                ${results.join('<br>')}`
+            );
+            updateCheck('check-4', allPassed ? 'pass' : 'fail');
+            return allPassed;
+        }
+
+        async function runAllTests() {
+            // Reset all checks
+            for (let i = 1; i <= 4; i++) {
+                updateCheck(`check-${i}`, 'pending');
+            }
+
+            // Run tests sequentially
+            await testServerConnection();
+            await new Promise(r => setTimeout(r, 500));
+
+            await testValidLogin();
+            await new Promise(r => setTimeout(r, 500));
+
+            await testInvalidLogin();
+            await new Promise(r => setTimeout(r, 500));
+
+            await testAllManicurists();
+        }
+    </script>
+</body>
+
+</html>

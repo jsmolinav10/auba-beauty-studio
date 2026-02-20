@@ -1,0 +1,13 @@
+# AUBA Beauty Studio - robots.txt
+
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /manicurist.html
+Disallow: /debug.html
+Disallow: /api/
+Disallow: /database/
+Disallow: /tests/
+
+# Sitemap
+Sitemap: https://auba.com/sitemap.xml

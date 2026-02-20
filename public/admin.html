@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2C2C3E" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png" />
+    <title>Panel de Administración | AUBA</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+
+    <link rel="stylesheet" href="css/admin.css" />
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="assets/Logo Auba.png" alt="AUBA" class="sidebar-logo" />
+            <span class="sidebar-title">Admin</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-section="dashboard">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+            <a href="#" class="nav-item" data-section="bookings">
+                <span class="nav-icon">📅</span>
+                Reservas
+            </a>
+            <a href="#" class="nav-item" data-section="services">
+                <span class="nav-icon">💅</span>
+                Servicios
+            </a>
+            <a href="#" class="nav-item" data-section="manicurists">
+                <span class="nav-icon">👩‍💼</span>
+                Manicuristas
+            </a>
+            <a href="#" class="nav-item" data-section="users">
+                <span class="nav-icon">👥</span>
+                Clientes
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button id="btn-logout" class="btn-logout">
+                <span>🚪</span> Cerrar Sesión
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menu-toggle">☰</button>
+                <h1 id="section-title">Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <span id="admin-name">Administrador</span>
+                <span class="admin-badge">Admin</span>
+            </div>
+        </header>
+
+        <!-- Login Section (shown when not authenticated) -->
+        <section id="login-section" class="login-section">
+            <div class="login-card">
+                <div class="login-header">
+                    <img src="assets/Logo Auba.png" alt="AUBA" class="login-logo" />
+                    <h2>Panel de Administración</h2>
+                    <p>Ingresa tus credenciales para continuar</p>
+                </div>
+                <form id="admin-login-form" class="login-form">
+                    <div id="login-error" class="error-message hidden"></div>
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="tel" id="admin-phone" placeholder="3001234567" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Contraseña</label>
+                        <input type="password" id="admin-password" placeholder="••••••••" required />
+                    </div>
+                    <button type="submit" class="btn-primary">Ingresar</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="content-section hidden">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-bookings-today">0</span>
+                        <span class="stat-label">Citas Hoy</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📆</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-bookings-week">0</span>
+                        <span class="stat-label">Citas Esta Semana</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-total-users">0</span>
+                        <span class="stat-label">Clientes Registrados</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-revenue-month">$0</span>
+                        <span class="stat-label">Ingresos del Mes</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>📅 Próximas Citas</h3>
+                    <div id="upcoming-bookings" class="bookings-list">
+                        <p class="loading-text">Cargando...</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>🔔 Acciones Rápidas</h3>
+                    <div class="quick-actions">
+                        <button class="action-btn" onclick="AdminApp.sendReminders()">
+                            📱 Enviar Recordatorios
+                        </button>
+                        <button class="action-btn" onclick="AdminApp.exportBookings()">
+                            📥 Exportar Reservas
+                        </button>
+                        <a href="index.html" class="action-btn" target="_blank">
+                            🌐 Ver Sitio Web
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bookings Section -->
+        <section id="bookings-section" class="content-section hidden">
+            <div class="section-header-row">
+                <h2>Gestión de Reservas</h2>
+                <div class="filters">
+                    <input type="date" id="filter-date" />
+                    <select id="filter-status">
+                        <option value="">Todos los estados</option>
+                        <option value="pending">Pendiente</option>
+                        <option value="confirmed">Confirmada</option>
+                        <option value="completed">Completada</option>
+                        <option value="cancelled">Cancelada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="bookings-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Servicio</th>
+                            <th>Manicurista</th>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookings-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services-section" class="content-section hidden">
+            <div class="section-header-row">
+                <h2>Gestión de Servicios</h2>
+                <button class="btn-primary" onclick="AdminApp.showServiceModal()">
+                    + Nuevo Servicio
+                </button>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="services-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Descripción</th>
+                            <th>Precio</th>
+                            <th>Duración</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="services-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Manicurists Section -->
+        <section id="manicurists-section" class="content-section hidden">
+            <div class="section-header-row">
+                <h2>Gestión de Manicuristas</h2>
+                <button class="btn-primary" onclick="AdminApp.showManicuristModal()">
+                    + Nueva Manicurista
+                </button>
+            </div>
+            <div class="cards-grid" id="manicurists-grid">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- Users Section -->
+        <section id="users-section" class="content-section hidden">
+            <div class="section-header-row">
+                <h2>Clientes Registrados</h2>
+                <input type="search" id="search-users" placeholder="Buscar cliente..." />
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th>Registro</th>
+                            <th>Citas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for editing -->
+    <div id="edit-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Editar</h3>
+                <button class="modal-close" onclick="AdminApp.closeModal()">×</button>
+            </div>
+            <form id="edit-form" class="modal-form">
+                <div id="modal-fields">
+                    <!-- Dynamic fields -->
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="AdminApp.closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('✅ SW registrado:', reg.scope))
+                    .catch(err => console.log('SW falló:', err));
+            });
+        }
+    </script>
+</body>
+
+</html>

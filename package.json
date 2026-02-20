@@ -28,6 +28,8 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "heic-convert": "^2.1.0",
+    "helmet": "^8.1.0",
+    "multer": "^2.0.2",
     "mysql2": "^3.16.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.13",

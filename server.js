@@ -9,23 +9,83 @@ const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const helmet = require('helmet');
 const cron = require('node-cron');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const WhatsAppService = require('./services/whatsapp');
+const multer = require('multer');
+const path = require('path');
+
+// Configurar Multer para subida de comprobantes de pago
+const proofStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'public', 'uploads', 'proofs'));
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'proof-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const uploadProof = multer({
+    storage: proofStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+    fileFilter: (req, file, cb) => {
+        const allowed = /jpeg|jpg|png|webp/;
+        const ext = allowed.test(path.extname(file.originalname).toLowerCase());
+        const mime = allowed.test(file.mimetype);
+        if (ext && mime) return cb(null, true);
+        cb(new Error('Solo se permiten imágenes (JPG, PNG, WebP)'));
+    }
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+
+// Security headers via Helmet (PWA-friendly)
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://checkout.epayco.co"],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "blob:"],
+            connectSrc: ["'self'", "https://graph.facebook.com", "https://checkout.epayco.co"],
+            frameSrc: ["https://checkout.epayco.co"],
+            manifestSrc: ["'self'"]
+        }
+    },
+    crossOriginEmbedderPolicy: false // Allow loading external resources
+}));
+
+// CORS — restrict to known domains in production
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:3000']; // Default for development
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true
+}));
+
 app.use(express.json());
-app.use(express.static('.')); // Servir archivos estáticos (HTML, CSS, JS)
+app.use(express.static('public')); // Serve ONLY the public directory
 
 // BUG-24 FIX: Rate limiting global
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // máx. 100 peticiones por IP cada 15 min
+    max: 1000, // máx. 1000 peticiones por IP cada 15 min (login tiene su propio límite de 5)
     message: { success: false, error: 'Demasiadas solicitudes. Intenta de nuevo en 15 minutos.' }
 });
 app.use('/api', globalLimiter);
@@ -373,8 +433,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Token y contraseña son requeridos' });
         }
 
-        if (newPassword.length < 4) {
-            return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 4 caracteres' });
+        if (newPassword.length < 6) {
+            return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 6 caracteres' });
         }
 
         // Find user by token and check expiry
@@ -462,7 +522,7 @@ app.get('/api/availability/:manicuristId/:date', async (req, res) => {
 // ============================================
 
 // Crear reserva
-app.post('/api/bookings', async (req, res) => {
+app.post('/api/bookings', requireAuth(['user']), async (req, res) => {
     try {
         const { user_id, manicurist_id, service_id, booking_date, booking_time } = req.body;
 
@@ -621,9 +681,16 @@ app.get('/api/manicurists/:id/bookings', requireAuth(['manicurist', 'admin']), a
                 b.booking_date,
                 b.booking_time,
                 b.status,
+                b.payment_type,
+                b.payment_amount,
+                b.payment_status,
+                b.payment_proof,
+                b.final_payment_amount,
+                b.final_payment_method,
                 u.name as client_name,
                 u.phone as client_phone,
-                s.title as service_title
+                s.title as service_title,
+                s.price as service_price
             FROM bookings b
             JOIN users u ON b.user_id = u.id
             JOIN services s ON b.service_id = s.id
@@ -684,6 +751,182 @@ app.put('/api/manicurists/:manicuristId/bookings/:bookingId/status', requireAuth
 
     } catch (error) {
         console.error('Error updating booking status:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+// ============================================
+// RUTAS DE PAGOS NEQUI
+// ============================================
+
+// Configuración de Nequi (QR estático del negocio)
+const DEPOSIT_AMOUNT = 20000; // Abono fijo de $20.000
+
+app.get('/api/payments/nequi-config', (req, res) => {
+    res.json({
+        depositAmount: DEPOSIT_AMOUNT,
+        qrImage: '/assets/nequi-qr.png',
+        businessName: 'AUBA Beauty Studio',
+        nequiNumber: process.env.NEQUI_NUMBER || ''
+    });
+});
+
+// Registrar pago de una reserva (con comprobante)
+app.put('/api/bookings/:id/payment', requireAuth(['user']), uploadProof.single('proof'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { payment_type, nequi_reference } = req.body;
+
+        if (!['deposit', 'full'].includes(payment_type)) {
+            return res.status(400).json({ success: false, error: 'Tipo de pago no válido' });
+        }
+
+        // Obtener precio del servicio
+        const [bookings] = await pool.execute(
+            `SELECT b.id, b.user_id, s.price, s.title 
+             FROM bookings b 
+             JOIN services s ON b.service_id = s.id 
+             WHERE b.id = ?`,
+            [id]
+        );
+
+        if (bookings.length === 0) {
+            return res.status(404).json({ success: false, error: 'Reserva no encontrada' });
+        }
+
+        const booking = bookings[0];
+        const paymentAmount = payment_type === 'deposit' ? DEPOSIT_AMOUNT : parseFloat(booking.price);
+        const proofPath = req.file ? '/uploads/proofs/' + req.file.filename : null;
+
+        await pool.execute(
+            `UPDATE bookings SET 
+                payment_type = ?, 
+                payment_amount = ?, 
+                payment_status = ?,
+                payment_proof = ?,
+                nequi_reference = ?
+             WHERE id = ?`,
+            [payment_type, paymentAmount, proofPath ? 'pending_verification' : 'unpaid', proofPath, nequi_reference || null, id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Pago registrado exitosamente',
+            payment: {
+                type: payment_type,
+                amount: paymentAmount,
+                status: 'pending_verification',
+                proof: proofPath
+            }
+        });
+
+    } catch (error) {
+        console.error('Error registrando pago:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+// Obtener info de pago de una reserva
+app.get('/api/bookings/:id/payment-info', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await pool.execute(
+            `SELECT b.payment_type, b.payment_amount, b.payment_status, 
+                    b.payment_proof, b.final_payment_amount, b.final_payment_method,
+                    s.price as service_price, s.title as service_title
+             FROM bookings b
+             JOIN services s ON b.service_id = s.id
+             WHERE b.id = ?`,
+            [id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Reserva no encontrada' });
+        }
+
+        const info = rows[0];
+        const remaining = parseFloat(info.service_price) - parseFloat(info.payment_amount) - parseFloat(info.final_payment_amount);
+
+        res.json({
+            success: true,
+            payment: {
+                ...info,
+                remaining_balance: Math.max(0, remaining),
+                deposit_amount: DEPOSIT_AMOUNT
+            }
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo info de pago:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+// Manicurista verifica pago recibido
+app.put('/api/manicurists/:manicuristId/bookings/:bookingId/verify-payment', requireAuth(['manicurist', 'admin']), async (req, res) => {
+    try {
+        const { manicuristId, bookingId } = req.params;
+
+        // Verificar que la cita pertenezca a esta manicurista
+        const [bookings] = await pool.execute(
+            'SELECT id, payment_status FROM bookings WHERE id = ? AND manicurist_id = ?',
+            [bookingId, manicuristId]
+        );
+
+        if (bookings.length === 0) {
+            return res.status(404).json({ success: false, error: 'Cita no encontrada' });
+        }
+
+        if (bookings[0].payment_status !== 'pending_verification') {
+            return res.status(400).json({ success: false, error: 'El pago no está pendiente de verificación' });
+        }
+
+        await pool.execute(
+            'UPDATE bookings SET payment_status = ? WHERE id = ?',
+            ['verified', bookingId]
+        );
+
+        res.json({ success: true, message: 'Pago verificado correctamente' });
+
+    } catch (error) {
+        console.error('Error verificando pago:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+// Manicurista completa servicio y registra pago final
+app.put('/api/manicurists/:manicuristId/bookings/:bookingId/complete-service', requireAuth(['manicurist', 'admin']), async (req, res) => {
+    try {
+        const { manicuristId, bookingId } = req.params;
+        const { final_payment_amount, final_payment_method } = req.body;
+
+        // Verificar que la cita pertenezca a esta manicurista
+        const [bookings] = await pool.execute(
+            `SELECT b.id, b.payment_type, b.payment_amount, s.price 
+             FROM bookings b 
+             JOIN services s ON b.service_id = s.id
+             WHERE b.id = ? AND b.manicurist_id = ?`,
+            [bookingId, manicuristId]
+        );
+
+        if (bookings.length === 0) {
+            return res.status(404).json({ success: false, error: 'Cita no encontrada' });
+        }
+
+        await pool.execute(
+            `UPDATE bookings SET 
+                status = 'completed',
+                payment_status = 'completed',
+                final_payment_amount = ?,
+                final_payment_method = ?
+             WHERE id = ?`,
+            [final_payment_amount || 0, final_payment_method || 'efectivo', bookingId]
+        );
+
+        res.json({ success: true, message: 'Servicio completado y pago registrado' });
+
+    } catch (error) {
+        console.error('Error completando servicio:', error);
         res.status(500).json({ success: false, error: 'Error del servidor' });
     }
 });
@@ -1225,6 +1468,42 @@ async function sendDailyReminders() {
         return [];
     }
 }
+
+// ============================================
+// HEALTH CHECK
+// ============================================
+
+app.get('/api/health', async (req, res) => {
+    try {
+        // Test DB connection
+        await pool.execute('SELECT 1');
+        res.json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            database: 'connected'
+        });
+    } catch (error) {
+        res.status(503).json({
+            status: 'error',
+            timestamp: new Date().toISOString(),
+            database: 'disconnected',
+            error: error.message
+        });
+    }
+});
+
+// ============================================
+// 404 CATCH-ALL
+// ============================================
+
+app.use((req, res) => {
+    if (req.accepts('html')) {
+        res.status(404).sendFile('404.html', { root: 'public' });
+    } else {
+        res.status(404).json({ success: false, error: 'Recurso no encontrado' });
+    }
+});
 
 // ============================================
 // INICIAR SERVIDOR

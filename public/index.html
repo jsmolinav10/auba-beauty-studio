@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AUBA SAS | Estética & Elegancia</title>
+    <meta name="description"
+        content="Estudio de uñas y estética con un enfoque minimalista y personalizado. Reserva tu cita online." />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/Logo Auba.png" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2C2C3E" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AUBA" />
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://auba.com/" />
+    <meta property="og:title" content="AUBA Beauty Studio | Estética & Elegancia" />
+    <meta property="og:description"
+        content="Estudio de uñas y estética con un enfoque minimalista y personalizado. Reserva tu cita online." />
+    <meta property="og:image" content="https://auba.com/assets/Logo Auba.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://auba.com/" />
+    <meta property="twitter:title" content="AUBA Beauty Studio | Estética & Elegancia" />
+    <meta property="twitter:description"
+        content="Estudio de uñas y estética con un enfoque minimalista y personalizado." />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/animations.css" />
+</head>
+
+<body>
+    <!-- Header / Navigation -->
+    <header id="main-header" class="glass-header">
+        <div class="container header-content">
+            <a href="index.html" class="logo">
+                <img src="assets/Logo Auba.png" alt="Auba Logo" />
+                <span>Arte silencioso en manos selectas</span>
+            </a>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="#home">Inicio</a></li>
+                    <li><a href="#services">Servicios</a></li>
+                    <li><a href="#gallery">Galería</a></li>
+                    <li><a href="#contact">Contacto</a></li>
+                </ul>
+            </nav>
+            <div class="header-actions">
+                <button id="btn-login" class="btn-text">Iniciar Sesión</button>
+                <div id="user-menu" class="user-menu hidden">
+                    <div class="user-avatar">👤</div>
+                    <span id="user-name" class="user-name"></span>
+                    <a href="mis-citas.html" class="btn-text" style="margin-right: 8px;">📅 Mis Citas</a>
+                    <button id="btn-logout" class="btn-text">Salir</button>
+                </div>
+                <!-- ⚠️ CAMBIO AQUÍ: Agregado ?showDeposit=true -->
+                <a href="booking.html?showDeposit=true" class="btn-primary">Reservar Cita</a>
+            </div>
+            <button class="mobile-menu-toggle" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="hero-section">
+            <div class="hero-content fade-in-up">
+                <h1 class="hero-title">Belleza en su <br />máxima expresión.</h1>
+                <p class="hero-subtitle">Cuidado personalizado, ambiente relajante y resultados impecables.</p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" onclick="window.location.href='#services'">Ver Servicios</button>
+                    <a href="#gallery" class="link-arrow">Explorar Galería</a>
+                </div>
+            </div>
+            <div class="hero-media-container fade-in">
+                <div class="media-placeholder">
+                    <span>Aquí insertar imagen/video principal del estudio</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Nuestros Servicios</h2>
+                    <p>Diseñados para realzar tu belleza natural.</p>
+                </div>
+                <div class="services-grid" id="services-list">
+                    <!-- Services injected by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section id="gallery" class="section bg-alt">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Portafolio</h2>
+                    <p>Una muestra de nuestra dedicación al detalle.</p>
+                </div>
+
+                <!-- Carousel -->
+                <div class="carousel-container">
+                    <div class="carousel" id="gallery-carousel">
+                        <div class="carousel-slide active">
+                            <img src="assets/servicios clientes/manicura-gel-diseno-elegante.jpg"
+                                alt="Manicura gel con diseño elegante - AUBA Beauty Studio">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/manicura-francesa-clasica.jpg"
+                                alt="Manicura francesa clásica - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/nail-art-floral.jpg"
+                                alt="Nail art floral decorativo - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/pedicura-spa-relajante.jpg"
+                                alt="Pedicura spa relajante - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/unas-acrilicas-naturales.jpg"
+                                alt="Uñas acrílicas acabado natural - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/manicura-moderna-colores.jpg"
+                                alt="Manicura moderna con colores - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/diseno-unas-minimalista.jpg"
+                                alt="Diseño de uñas minimalista - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/lifting-pestanas-natural.jpg"
+                                alt="Lifting de pestañas natural - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/diseno-cejas-visagismo.jpg"
+                                alt="Diseño de cejas con visagismo - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/manicura-gel-nude.jpg"
+                                alt="Manicura gel color nude - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/nail-art-geometrico.jpg"
+                                alt="Nail art con diseño geométrico - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/unas-acrilicas-esculpidas.jpg"
+                                alt="Uñas acrílicas esculpidas - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/pedicura-decorativa.jpg"
+                                alt="Pedicura decorativa profesional - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/manicura-tendencia-2026.jpg"
+                                alt="Manicura tendencia 2026 - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="assets/servicios clientes/tratamiento-manos-spa.jpg"
+                                alt="Tratamiento de manos spa rejuvenecedor - AUBA Beauty Studio" loading="lazy">
+                        </div>
+                    </div>
+
+                    <!-- Navigation Arrows -->
+                    <button class="carousel-btn carousel-prev" onclick="changeSlide(-1)" aria-label="Anterior">
+                        <span>‹</span>
+                    </button>
+                    <button class="carousel-btn carousel-next" onclick="changeSlide(1)" aria-label="Siguiente">
+                        <span>›</span>
+                    </button>
+
+                    <!-- Dots Indicator -->
+                    <div class="carousel-dots" id="carousel-dots"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="section">
+            <div class="container">
+                <div class="contact-layout">
+                    <div class="contact-info">
+                        <h2>Visítanos</h2>
+                        <p>Estamos listos para atenderte.</p>
+                        <ul class="info-list">
+                            <li><strong>Dirección:</strong> Calle Principal 123, Ciudad</li>
+                            <li><strong>Teléfono:</strong> +57 300 123 4567</li>
+                            <li><strong>Email:</strong> contacto@auba.com</li>
+                        </ul>
+                        <div class="social-links">
+                            <a href="#" class="social-icon">Instagram</a>
+                            <a href="#" class="social-icon">Facebook</a>
+                            <a href="#" class="social-icon">TikTok</a>
+                        </div>
+                    </div>
+                    <div class="map-container">
+                        <div class="media-placeholder">Mapa o Dirección del estudio</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="container footer-content">
+            <div class="footer-col">
+                <h3>AUBA</h3>
+                <p>Copyright © 2026 AUBA.</p>
+            </div>
+            <div class="footer-col">
+                <a href="privacy.html">Política de Privacidad</a>
+                <a href="terms.html">Términos de Servicio</a>
+            </div>
+            <div class="footer-col">
+                <a href="manicurist.html" style="color: var(--color-accent);">👩‍💼 Portal Manicuristas</a>
+                <a href="admin.html" style="color: var(--color-text-secondary);">🔐 Administración</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating WhatsApp -->
+    <a href="https://wa.me/573001234567" class="whatsapp-float" target="_blank" aria-label="WhatsApp">
+        <img src="assets/logo whatsApp.png" alt="WhatsApp" width="40" height="40" style="object-fit: contain;">
+    </a>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <!-- Login View -->
+            <div id="login-view">
+                <div class="modal-header">
+                    <h2>Iniciar Sesión</h2>
+                    <button class="modal-close">×</button>
+                </div>
+                <form id="login-form" class="auth-form">
+                    <div id="login-error" class="auth-error"></div>
+                    <div class="form-group">
+                        <label>Número de celular <span class="required">*</span></label>
+                        <input type="tel" id="login-phone" class="form-input" placeholder="3001234567" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contraseña <span class="required">*</span></label>
+                        <div class="password-wrapper">
+                            <input type="password" id="login-password" class="form-input" placeholder="Tu contraseña"
+                                required>
+                            <button type="button" class="password-toggle">👁</button>
+                        </div>
+                    </div>
+                    <div class="forgot-password-link">
+                        <a href="#" id="btn-forgot-password">¿Olvidaste tu contraseña?</a>
+                    </div>
+                    <button type="submit" class="btn-primary full-width">Ingresar</button>
+                </form>
+                <div class="auth-footer">
+                    ¿No tienes cuenta? <a href="#" class="auth-toggle">Regístrate aquí</a>
+                </div>
+            </div>
+
+            <!-- Forgot Password View -->
+            <div id="forgot-password-view" class="hidden">
+                <div class="modal-header">
+                    <h2>Recuperar Contraseña</h2>
+                    <button class="modal-close">×</button>
+                </div>
+                <form id="forgot-password-form" class="auth-form">
+                    <div id="forgot-error" class="auth-error"></div>
+                    <div id="forgot-success" class="auth-success hidden"></div>
+                    <p class="form-description">Ingresa tu correo electrónico y te enviaremos un enlace para restablecer
+                        tu contraseña.</p>
+                    <div class="form-group">
+                        <label>Correo electrónico <span class="required">*</span></label>
+                        <input type="email" id="forgot-email" class="form-input" placeholder="tu@email.com" required>
+                    </div>
+                    <button type="submit" class="btn-primary full-width">Enviar Enlace</button>
+                </form>
+                <div class="auth-footer">
+                    <a href="#" id="btn-back-to-login">← Volver a iniciar sesión</a>
+                </div>
+            </div>
+
+            <!-- Register View -->
+            <div id="register-view" class="hidden">
+                <div class="modal-header">
+                    <h2>Crear Cuenta</h2>
+                    <button class="modal-close">×</button>
+                </div>
+                <form id="register-form" class="auth-form">
+                    <div id="register-error" class="auth-error"></div>
+                    <div class="form-group">
+                        <label>Nombre completo <span class="required">*</span></label>
+                        <input type="text" id="register-name" class="form-input" placeholder="Tu nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de celular <span class="required">*</span></label>
+                        <input type="tel" id="register-phone" class="form-input" placeholder="3001234567" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email <span class="required">*</span></label>
+                        <input type="email" id="register-email" class="form-input" placeholder="tu@email.com" required>
+                        <small class="form-hint">Requerido para recuperar tu contraseña</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Contraseña <span class="required">*</span></label>
+                        <div class="password-wrapper">
+                            <input type="password" id="register-password" class="form-input"
+                                placeholder="Mínimo 6 caracteres" required>
+                            <button type="button" class="password-toggle">👁</button>
+                        </div>
+                    </div>
+                    <div class="form-group consent-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="register-consent" required>
+                            <span>Acepto el <a href="privacy.html" target="_blank">tratamiento de mis datos
+                                    personales</a>
+                                conforme a la Ley 1581 de 2012 (Habeas Data)</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-primary full-width">Crear Cuenta</button>
+                </form>
+                <div class="auth-footer">
+                    ¿Ya tienes cuenta? <a href="#" class="auth-toggle">Inicia sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Javascript -->
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Carousel Script -->
+    <script>
+        (function () {
+            let currentSlide = 0;
+            let autoPlayInterval;
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dotsContainer = document.getElementById('carousel-dots');
+
+            if (!slides.length || !dotsContainer) return;
+
+            // Create dots
+            slides.forEach((_, index) => {
+                const dot = document.createElement('button');
+                dot.className = 'carousel-dot' + (index === 0 ? ' active' : '');
+                dot.onclick = () => goToSlide(index);
+                dot.setAttribute('aria-label', `Imagen ${index + 1}`);
+                dotsContainer.appendChild(dot);
+            });
+
+            const dots = document.querySelectorAll('.carousel-dot');
+
+            function showSlide(index) {
+                slides.forEach(s => s.classList.remove('active'));
+                dots.forEach(d => d.classList.remove('active'));
+
+                currentSlide = (index + slides.length) % slides.length;
+
+                slides[currentSlide].classList.add('active');
+                dots[currentSlide].classList.add('active');
+            }
+
+            window.changeSlide = function (direction) {
+                showSlide(currentSlide + direction);
+                resetAutoPlay();
+            };
+
+            window.goToSlide = function (index) {
+                showSlide(index);
+                resetAutoPlay();
+            };
+
+            function startAutoPlay() {
+                autoPlayInterval = setInterval(() => {
+                    showSlide(currentSlide + 1);
+                }, 10000); // 10 seconds
+            }
+
+            function resetAutoPlay() {
+                clearInterval(autoPlayInterval);
+                startAutoPlay();
+            }
+
+            // Start auto-play
+            startAutoPlay();
+        })();
+    </script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => {
+                        console.log('✅ Service Worker registrado:', reg.scope);
+                        // Verificar actualizaciones
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'activated') {
+                                    console.log('🔄 Nueva versión disponible');
+                                }
+                            });
+                        });
+                    })
+                    .catch(err => console.log('SW registro falló:', err));
+            });
+        }
+    </script>
+</body>
+
+</html>
