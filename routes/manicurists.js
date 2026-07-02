@@ -192,7 +192,7 @@ router.get('/:id/search-clients', async (req, res) => {
         const searchTerm = `%${q}%`;
         const [rows] = await pool.execute(
             `SELECT id, name, phone FROM users 
-             WHERE (name LIKE ? OR phone LIKE ?) 
+             WHERE (name ILIKE ? OR phone ILIKE ?) 
              ORDER BY name ASC LIMIT 10`,
             [searchTerm, searchTerm]
         );
@@ -276,7 +276,7 @@ router.post('/:id/bookings', async (req, res) => {
         const [existing] = await pool.execute(
             `SELECT id FROM bookings 
              WHERE manicurist_id = ? AND booking_date = ? AND status != 'cancelled'
-             AND ABS(TIMESTAMPDIFF(HOUR, booking_time, ?)) < 2`,
+             AND ABS(EXTRACT(EPOCH FROM (booking_time - ?::TIME)) / 3600) < 2`,
             [id, booking_date, booking_time]
         );
 

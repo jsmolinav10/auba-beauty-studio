@@ -7,10 +7,22 @@ const pgPool = new Pool({
 
 const db = {
     async execute(sql, params = []) {
-        // Replace all ? with $1, $2, $3...
+        // Replace all ? placeholders with $1, $2, $3...
+        // This regex skips ? inside single-quoted strings
         let counter = 1;
-        // The regex replaces ? not inside quotes, but simple replace works for our queries
-        const pgSql = sql.replace(/\?/g, () => `$${counter++}`);
+        let inString = false;
+        let pgSql = '';
+        for (let i = 0; i < sql.length; i++) {
+            const char = sql[i];
+            if (char === "'" && (i === 0 || sql[i-1] !== '\\')) {
+                inString = !inString;
+                pgSql += char;
+            } else if (char === '?' && !inString) {
+                pgSql += `$${counter++}`;
+            } else {
+                pgSql += char;
+            }
+        }
         
         let finalSql = pgSql;
         

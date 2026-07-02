@@ -27,8 +27,8 @@ router.get('/stats', async (req, res) => {
 
         const [weekBookings] = await pool.execute(
             `SELECT COUNT(*) as count FROM bookings 
-             WHERE booking_date >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
-             AND booking_date <= DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 6 DAY)`
+             WHERE booking_date >= CURRENT_DATE - EXTRACT(ISODOW FROM CURRENT_DATE)::INT + 1
+             AND booking_date <= CURRENT_DATE - EXTRACT(ISODOW FROM CURRENT_DATE)::INT + 7`
         );
 
         const [totalUsers] = await pool.execute('SELECT COUNT(*) as count FROM users');
@@ -37,8 +37,8 @@ router.get('/stats', async (req, res) => {
             SELECT COALESCE(SUM(s.price), 0) as total
             FROM bookings b
             JOIN services s ON b.service_id = s.id
-            WHERE MONTH(b.booking_date) = MONTH(CURDATE())
-            AND YEAR(b.booking_date) = YEAR(CURDATE())
+            WHERE EXTRACT(MONTH FROM b.booking_date) = EXTRACT(MONTH FROM CURRENT_DATE)
+            AND EXTRACT(YEAR FROM b.booking_date) = EXTRACT(YEAR FROM CURRENT_DATE)
             AND b.status IN ('confirmed', 'completed')
         `);
 
@@ -72,7 +72,7 @@ router.get('/bookings/upcoming', async (req, res) => {
             FROM bookings b
             JOIN users u ON b.user_id = u.id
             JOIN services s ON b.service_id = s.id
-            WHERE b.booking_date >= CURDATE()
+            WHERE b.booking_date >= CURRENT_DATE
             AND b.status != 'cancelled'
             ORDER BY b.booking_date ASC, b.booking_time ASC
             LIMIT 10

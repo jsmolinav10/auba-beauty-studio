@@ -40,7 +40,7 @@ router.get('/availability/:manicuristId/:date', async (req, res) => {
         const { manicuristId, date } = req.params;
 
         const [bookings] = await pool.execute(
-            'SELECT booking_time, service_id FROM bookings WHERE manicurist_id = ? AND booking_date = ? AND status != "cancelled"',
+            'SELECT booking_time, service_id FROM bookings WHERE manicurist_id = ? AND booking_date = ? AND status != \'cancelled\'',
             [manicuristId, date]
         );
 
@@ -80,8 +80,8 @@ router.post('/bookings', requireAuth(['user']), async (req, res) => {
              AND booking_date = ? 
              AND status != 'cancelled'
              AND (
-                (booking_time <= ? AND ADDTIME(booking_time, '02:00:00') > ?) OR
-                (booking_time < ADDTIME(?, '02:00:00') AND ADDTIME(booking_time, '02:00:00') >= ADDTIME(?, '02:00:00'))
+                (booking_time <= ? AND booking_time + INTERVAL '2 hours' > ?::TIME) OR
+                (booking_time < ?::TIME + INTERVAL '2 hours' AND booking_time + INTERVAL '2 hours' >= ?::TIME + INTERVAL '2 hours')
              )`,
             [manicurist_id, booking_date, booking_time, booking_time, booking_time, booking_time]
         );
@@ -123,7 +123,7 @@ router.get('/bookings/:userId', requireAuth(['user']), async (req, res) => {
         const [rows] = await pool.execute(`
             SELECT 
                 b.id,
-                DATE_FORMAT(b.booking_date, '%Y-%m-%d') as booking_date,
+                TO_CHAR(b.booking_date, 'YYYY-MM-DD') as booking_date,
                 b.booking_time,
                 b.status,
                 b.created_at,
@@ -188,8 +188,8 @@ router.put('/bookings/:id/reschedule', requireAuth(['user']), async (req, res) =
              AND status NOT IN ('cancelled', 'no_show')
              AND id != ?
              AND (
-                (booking_time <= ? AND ADDTIME(booking_time, '02:00:00') > ?) OR
-                (booking_time < ADDTIME(?, '02:00:00') AND ADDTIME(booking_time, '02:00:00') >= ADDTIME(?, '02:00:00'))
+                (booking_time <= ? AND booking_time + INTERVAL '2 hours' > ?::TIME) OR
+                (booking_time < ?::TIME + INTERVAL '2 hours' AND booking_time + INTERVAL '2 hours' >= ?::TIME + INTERVAL '2 hours')
              )`,
             [booking.manicurist_id, new_date, id, new_time, new_time, new_time, new_time]
         );
