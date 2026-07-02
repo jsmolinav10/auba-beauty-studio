@@ -10,7 +10,7 @@ require('dotenv').config();
 // ============================================
 // VALIDATE CRITICAL ENV VARS AT STARTUP
 // ============================================
-const REQUIRED_ENV = ['DB_PASSWORD', 'ADMIN_PHONE', 'ADMIN_PASSWORD', 'JWT_SECRET'];
+const REQUIRED_ENV = ['SUPABASE_DB_URL', 'ADMIN_PHONE', 'ADMIN_PASSWORD', 'JWT_SECRET'];
 const missing = REQUIRED_ENV.filter(key => !process.env[key]);
 if (missing.length > 0) {
     console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
