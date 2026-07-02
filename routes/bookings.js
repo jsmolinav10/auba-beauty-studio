@@ -15,7 +15,7 @@ const { requireAuth } = require('./middleware');
 router.get('/manicurists', async (req, res) => {
     try {
         const pool = req.app.locals.pool;
-        const [rows] = await pool.execute('SELECT * FROM manicurists WHERE available = TRUE');
+        const [rows] = await pool.execute('SELECT id, name, phone, specialty, available FROM manicurists WHERE available = TRUE');
         res.json(rows);
     } catch (error) {
         res.status(500).json({ error: 'Error del servidor' });
