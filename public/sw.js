@@ -3,20 +3,26 @@
  * Estrategia: Cache First para estáticos, Network First para API
  */
 
-const CACHE_NAME = 'auba-pwa-v3';
+const CACHE_NAME = 'auba-pwa-v6';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/booking.html',
     '/mis-citas.html',
+    '/manicurist.html',
+    '/admin.html',
     '/css/main.css',
     '/css/layout.css',
     '/css/components.css',
     '/css/animations.css',
+    '/css/admin.css',
     '/js/app.js',
     '/js/auth.js',
     '/js/booking.js',
     '/js/my-bookings.js',
+    '/js/payments.js',
+    '/js/manicurist.js',
+    '/js/admin.js',
     '/assets/Logo Auba.png',
     '/assets/icons/icon-192x192.png',
     '/assets/icons/icon-512x512.png',

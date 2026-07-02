@@ -1,5 +1,6 @@
 -- Script para crear la base de datos AUBA Studio
 -- Ejecutar con: mysql -u root -p < database/schema.sql
+-- Este schema es la fuente de verdad completa (incluye pagos y recovery)
 
 CREATE DATABASE IF NOT EXISTS auba_studio;
 USE auba_studio;
@@ -11,6 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(15) NOT NULL UNIQUE,
     email VARCHAR(100),
     password VARCHAR(255) NOT NULL,
+    password_reset_token VARCHAR(255) DEFAULT NULL,
+    token_expiry DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -33,7 +36,7 @@ CREATE TABLE IF NOT EXISTS services (
     description TEXT
 );
 
--- Tabla de reservas (con booking_time incluido)
+-- Tabla de reservas (con pagos Nequi/ePayco incluidos)
 CREATE TABLE IF NOT EXISTS bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -42,6 +45,17 @@ CREATE TABLE IF NOT EXISTS bookings (
     booking_date DATE NOT NULL,
     booking_time TIME NOT NULL,
     status ENUM('pending','confirmed','in_progress','completed','cancelled','no_show') DEFAULT 'pending',
+    -- Campos de pago anticipado (Nequi QR)
+    payment_type ENUM('none','deposit','full') DEFAULT 'none',
+    payment_amount DECIMAL(10,2) DEFAULT 0,
+    payment_status ENUM('unpaid','pending_verification','verified','completed') DEFAULT 'unpaid',
+    payment_proof VARCHAR(255) DEFAULT NULL,
+    nequi_reference VARCHAR(100) DEFAULT NULL,
+    -- Campos de pago final (al completar servicio)
+    final_payment_amount DECIMAL(10,2) DEFAULT 0,
+    final_payment_method VARCHAR(50) DEFAULT NULL,
+    -- Referencia ePayco (pago online)
+    payment_ref VARCHAR(100) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (manicurist_id) REFERENCES manicurists(id) ON DELETE CASCADE,
@@ -63,3 +77,4 @@ INSERT INTO services (title, price, duration, description) VALUES
 ('Diseño de Cejas', 35000, 45, 'Visagismo y depilación con hilo para unas cejas perfectas.'),
 ('Maquillaje Social', 120000, 120, 'Look profesional para eventos especiales, resaltando tu belleza.'),
 ('Tratamiento Facial', 150000, 90, 'Limpieza e hidratación para una piel radiante y saludable.');
+

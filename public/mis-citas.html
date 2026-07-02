@@ -436,7 +436,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <a href="index.html" class="back-link">← Volver al inicio</a>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <a href="index.html" class="back-link">← Volver al inicio</a>
+                <button id="btn-change-password" class="back-link" style="background: none; border: none; cursor: pointer; color: var(--color-accent); font-size: 14px;">Cambiar Contraseña</button>
+            </div>
             <div class="user-info" id="user-info"></div>
         </div>
 
@@ -500,6 +503,23 @@
                 <button id="btn-confirm-reschedule" class="btn-primary" disabled>Confirmar Reagendamiento</button>
                 <button id="btn-cancel-reschedule" class="btn-secondary">Cancelar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Cambio de Contraseña -->
+    <div id="change-password-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 style="margin-bottom: 24px;">Cambiar Contraseña</h2>
+            <form id="change-password-form">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Nueva Contraseña</label>
+                    <input type="password" id="new-password" required minlength="6" style="width: 100%; padding: 12px; border: 1px solid #E5E5EA; border-radius: 8px;">
+                </div>
+                <div class="modal-actions" style="flex-direction: row; margin-top: 24px;">
+                    <button type="submit" class="btn-primary" style="flex: 1;">Guardar</button>
+                    <button type="button" id="btn-cancel-password" class="btn-secondary" style="flex: 1;">Cancelar</button>
+                </div>
+            </form>
         </div>
     </div>
 

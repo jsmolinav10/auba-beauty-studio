@@ -4,7 +4,8 @@
  */
 
 // BUG-12 FIX: Detectar origin dinámicamente
-const API_BASE = window.location.origin + '/api';
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+const API_BASE = IS_LOCAL ? window.location.origin + '/api' : 'https://auba-api.onrender.com/api';
 let currentManicurist = null;
 let selectedDate = null;
 const MANICURIST_TOKEN_KEY = 'auba_manicurist_token';
@@ -74,10 +75,23 @@ function showDashboard() {
         month: 'long'
     });
 
+    // Default selection for calendar tab is today (local)
+    selectedDate = getLocalDateISO(today);
+
     // Load data
     loadPendingBookings();
     loadTodayBookings();
     renderMiniCalendar();
+    loadBookingsForDate(selectedDate); // Initial load for Agenda tab
+    initBookingTab();
+}
+
+// Helper to get YYYY-MM-DD in local time
+function getLocalDateISO(dateObj) {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 // Setup Tabs
@@ -203,22 +217,33 @@ async function loadTodayBookings() {
 function renderMiniCalendar() {
     const container = document.getElementById('mini-calendar');
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = getLocalDateISO(today);
 
+    // Week day initials
+    const dayNames = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
     let html = '';
+
+    // Add headers for days starting from today's day of week
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        html += `<div style="text-align: center; font-size: 11px; color: #999; font-weight: 600; margin-bottom: 8px;">${dayNames[date.getDay()]}</div>`;
+    }
+
     for (let i = 0; i < 30; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() + i);
 
-        const dateStr = date.toISOString().split('T')[0];
-        const day = date.getDate();
+        const dateStr = getLocalDateISO(date);
+        const dayNum = date.getDate();
         const isToday = dateStr === todayStr;
 
         html += `
-            <div class="day-cell ${dateStr === selectedDate ? 'selected' : ''} ${isToday ? 'today' : ''}" 
+            <div class="cal-day ${dateStr === selectedDate ? 'selected' : ''} ${isToday ? 'today' : ''}" 
                  data-date="${dateStr}" 
                  onclick="selectDate('${dateStr}')">
-                ${day}
+                <span class="day-name">${dayNames[date.getDay()]}</span>
+                ${dayNum}
             </div>
         `;
     }
@@ -283,6 +308,67 @@ function renderBookingCard(booking, context) {
     const dateObj = new Date(year, month - 1, day);
     const dateFormatted = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 
+    // Payment info
+    const paymentStatus = booking.payment_status || 'unpaid';
+    const paymentType = booking.payment_type || 'none';
+    const paymentAmount = parseFloat(booking.payment_amount) || 0;
+    const servicePrice = parseFloat(booking.service_price) || 0;
+    const remaining = servicePrice - paymentAmount - (parseFloat(booking.final_payment_amount) || 0);
+
+    // Payment badge
+    let paymentBadgeHtml = '';
+    const paymentLabels = {
+        'unpaid': { text: 'Sin pago', color: '#999', bg: '#F5F5F5' },
+        'pending_verification': { text: '⏳ Pago pendiente', color: '#E65100', bg: '#FFF3E0' },
+        'verified': { text: '✅ Pago verificado', color: '#2E7D32', bg: '#E8F5E9' },
+        'completed': { text: '💰 Pago completo', color: '#1565C0', bg: '#E3F2FD' }
+    };
+    const pLabel = paymentLabels[paymentStatus] || paymentLabels['unpaid'];
+
+    if (paymentType !== 'none') {
+        const typeText = paymentType === 'deposit' ? 'Abono' : 'Pago completo';
+        const refHtml = booking.nequi_reference
+            ? `<div style="margin-top: 6px; padding: 6px 10px; background: #FCE4EC; border-radius: 6px; font-size: 12px; color: #C62828; font-weight: 600;">
+                   📋 Ref. Nequi: <span style="font-family: monospace; letter-spacing: 1px;">${booking.nequi_reference}</span>
+               </div>`
+            : '';
+        paymentBadgeHtml = `
+            <div style="margin-top: 8px; padding: 8px 12px; border-radius: 8px; background: ${pLabel.bg}; font-size: 13px;">
+                <span style="color: ${pLabel.color}; font-weight: 600;">${pLabel.text}</span>
+                <span style="color: #666; margin-left: 8px;">
+                    ${typeText}: $${paymentAmount.toLocaleString('es-CO')} / $${servicePrice.toLocaleString('es-CO')}
+                </span>
+                ${refHtml}
+            </div>
+        `;
+    }
+
+    // Payment actions
+    let paymentActionsHtml = '';
+
+    // View proof button — show reference number as clickable link to proof image
+    if (booking.payment_proof) {
+        const refLabel = booking.nequi_reference
+            ? `📋 Ref: ${booking.nequi_reference}`
+            : '📎 Ver Comprobante';
+        paymentActionsHtml += `
+            <button class="action-btn" style="background: #7B1FA2; color: white; font-family: monospace; letter-spacing: 0.5px;" 
+                    onclick="window.open('${booking.payment_proof}', '_blank')">
+                ${refLabel}
+            </button>
+        `;
+    }
+
+    // Verify payment button (only for pending_verification)
+    if (paymentStatus === 'pending_verification') {
+        paymentActionsHtml += `
+            <button class="action-btn" style="background: #FF9800; color: white;"
+                    data-id="${booking.id}" data-action="verify-payment">
+                ✓ Verificar Pago
+            </button>
+        `;
+    }
+
     // Determine which actions to show based on status
     let actionsHtml = '';
 
@@ -302,11 +388,21 @@ function renderBookingCard(booking, context) {
             </button>
         `;
     } else if (status === 'in_progress') {
-        actionsHtml = `
-            <button class="action-btn complete" data-id="${booking.id}" data-action="complete">
-                ✓ Completar
-            </button>
-        `;
+        // Show complete with payment info
+        if (paymentType === 'deposit' && remaining > 0) {
+            actionsHtml = `
+                <button class="action-btn complete" data-id="${booking.id}" data-action="complete-service"
+                        data-remaining="${remaining}" data-service-price="${servicePrice}">
+                    💰 Completar (Saldo: $${remaining.toLocaleString('es-CO')})
+                </button>
+            `;
+        } else {
+            actionsHtml = `
+                <button class="action-btn complete" data-id="${booking.id}" data-action="complete">
+                    ✓ Completar
+                </button>
+            `;
+        }
     }
 
     return `
@@ -316,10 +412,12 @@ function renderBookingCard(booking, context) {
                 <div class="booking-details">
                     <strong>${booking.client_name}</strong> - ${booking.service_title}<br>
                     📱 ${booking.client_phone} ${context !== 'today' ? `| 📅 ${dateFormatted}` : ''}
+                    ${paymentBadgeHtml}
                 </div>
                 <span class="booking-status status-${status}">${statusLabel}</span>
             </div>
             <div class="booking-actions">
+                ${paymentActionsHtml}
                 ${actionsHtml}
             </div>
         </div>
@@ -332,10 +430,84 @@ function renderBookingCard(booking, context) {
 
 function attachActionListeners() {
     document.querySelectorAll('.action-btn').forEach(btn => {
+        // Skip buttons that already use onclick
+        if (btn.onclick) return;
+
         btn.addEventListener('click', async (e) => {
             const bookingId = btn.dataset.id;
             const action = btn.dataset.action;
 
+            if (!action || !bookingId) return;
+
+            // Handle verify-payment
+            if (action === 'verify-payment') {
+                btn.disabled = true;
+                btn.textContent = 'Verificando...';
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/manicurists/${currentManicurist.id}/bookings/${bookingId}/verify-payment`,
+                        {
+                            method: 'PUT',
+                            headers: authHeaders({ 'Content-Type': 'application/json' })
+                        }
+                    );
+                    const result = await response.json();
+                    if (result.success) {
+                        refreshAllViews();
+                    } else {
+                        alert('Error: ' + (result.error || 'No se pudo verificar'));
+                        btn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error verifying payment:', error);
+                    alert('Error de conexión');
+                    btn.disabled = false;
+                }
+                return;
+            }
+
+            // Handle complete-service (with remaining balance)
+            if (action === 'complete-service') {
+                const remaining = parseFloat(btn.dataset.remaining) || 0;
+                const method = prompt(
+                    `💰 Saldo pendiente: $${remaining.toLocaleString('es-CO')}\n\n¿Cómo pagó la clienta?\n\nEscribe: efectivo, nequi, o transferencia`,
+                    'efectivo'
+                );
+
+                if (!method) return;
+
+                btn.disabled = true;
+                btn.textContent = 'Procesando...';
+
+                try {
+                    const response = await fetch(
+                        `${API_BASE}/manicurists/${currentManicurist.id}/bookings/${bookingId}/complete-service`,
+                        {
+                            method: 'PUT',
+                            headers: authHeaders({ 'Content-Type': 'application/json' }),
+                            body: JSON.stringify({
+                                final_payment_amount: remaining,
+                                final_payment_method: method.trim()
+                            })
+                        }
+                    );
+                    const result = await response.json();
+                    if (result.success) {
+                        refreshAllViews();
+                    } else {
+                        alert('Error: ' + (result.error || 'No se pudo completar'));
+                        btn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error completing service:', error);
+                    alert('Error de conexión');
+                    btn.disabled = false;
+                }
+                return;
+            }
+
+            // Handle standard status changes
             btn.disabled = true;
             btn.textContent = 'Procesando...';
 
@@ -365,12 +537,7 @@ function attachActionListeners() {
                 const result = await response.json();
 
                 if (result.success) {
-                    // Refresh all views
-                    loadPendingBookings();
-                    loadTodayBookings();
-                    if (selectedDate) {
-                        loadBookingsForDate(selectedDate);
-                    }
+                    refreshAllViews();
                 } else {
                     alert('Error: ' + (result.error || 'No se pudo actualizar'));
                     btn.disabled = false;
@@ -383,3 +550,300 @@ function attachActionListeners() {
         });
     });
 }
+
+// Helper to refresh all views
+function refreshAllViews() {
+    loadPendingBookings();
+    loadTodayBookings();
+    if (selectedDate) {
+        loadBookingsForDate(selectedDate);
+    }
+}
+
+// =============================================
+// AGENDAR CITA (Booking Tab)
+// =============================================
+
+let selectedClientId = null;
+let selectedBookTime = null;
+let searchTimeout = null;
+
+// Load services into the dropdown when tab is activated
+async function loadServicesForBooking() {
+    try {
+        const res = await fetch(`${API_BASE}/services`);
+        const data = await res.json();
+        const select = document.getElementById('book-service');
+
+        // Keep only first <option>
+        select.innerHTML = '<option value="">Selecciona un servicio...</option>';
+
+        const services = Array.isArray(data) ? data : (data.services || []);
+        services.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = `${s.name} — $${Number(s.price).toLocaleString('es-CO')}`;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('Error cargando servicios:', e);
+    }
+}
+
+// Client search with autocomplete
+function setupClientSearch() {
+    const phoneInput = document.getElementById('search-client-phone');
+    const nameInput = document.getElementById('search-client-name');
+
+    phoneInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => searchClients(phoneInput.value.trim(), 'phone'), 300);
+    });
+
+    nameInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => searchClients(nameInput.value.trim(), 'name'), 300);
+    });
+
+    // Close dropdowns on click outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-wrapper')) {
+            document.querySelectorAll('.search-results').forEach(el => el.classList.remove('show'));
+        }
+    });
+}
+
+async function searchClients(query, source) {
+    const resultsEl = document.getElementById(source === 'phone' ? 'search-results-phone' : 'search-results-name');
+
+    if (!query || query.length < 2) {
+        resultsEl.classList.remove('show');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/search-clients?q=${encodeURIComponent(query)}`, { headers: authHeaders() });
+        const data = await res.json();
+
+        if (data.success && data.clients.length > 0) {
+            resultsEl.innerHTML = data.clients.map(c => `
+                <div class="search-result-item" onclick="selectClient(${c.id}, '${c.name.replace(/'/g, "\\'")}', '${c.phone}')">
+                    <div class="client-name">${c.name}</div>
+                    <div class="client-phone">📱 ${c.phone}</div>
+                </div>
+            `).join('');
+            resultsEl.classList.add('show');
+        } else {
+            resultsEl.innerHTML = '<div style="padding: 12px 16px; color: #999; font-size: 13px;">No se encontraron clientas</div>';
+            resultsEl.classList.add('show');
+        }
+    } catch (e) {
+        console.error('Error buscando clientas:', e);
+    }
+}
+
+function selectClient(id, name, phone) {
+    selectedClientId = id;
+
+    // Fill both inputs
+    document.getElementById('search-client-phone').value = phone;
+    document.getElementById('search-client-name').value = name;
+
+    // Show badge
+    document.getElementById('selected-client-name').textContent = name;
+    document.getElementById('selected-client-phone').textContent = phone;
+    document.getElementById('selected-client-badge').classList.add('show');
+
+    // Hide dropdowns
+    document.querySelectorAll('.search-results').forEach(el => el.classList.remove('show'));
+
+    // Disable search inputs
+    document.getElementById('search-client-phone').disabled = true;
+    document.getElementById('search-client-name').disabled = true;
+
+    validateBookForm();
+}
+
+function clearSelectedClient() {
+    selectedClientId = null;
+    document.getElementById('search-client-phone').value = '';
+    document.getElementById('search-client-name').value = '';
+    document.getElementById('search-client-phone').disabled = false;
+    document.getElementById('search-client-name').disabled = false;
+    document.getElementById('selected-client-badge').classList.remove('show');
+    validateBookForm();
+}
+
+// Load available times for selected date
+async function loadAvailableTimes() {
+    const date = document.getElementById('book-date').value;
+    const slotsContainer = document.getElementById('book-time-slots');
+    selectedBookTime = null;
+
+    if (!date) {
+        slotsContainer.innerHTML = '<p style="color: #999; grid-column: 1/-1;">Selecciona una fecha primero</p>';
+        validateBookForm();
+        return;
+    }
+
+    slotsContainer.innerHTML = '<p style="color: #999; grid-column: 1/-1;">Cargando horarios...</p>';
+
+    try {
+        const res = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/available-times?date=${date}`, { headers: authHeaders() });
+        const data = await res.json();
+
+        if (data.success && data.times.length > 0) {
+            slotsContainer.innerHTML = data.times.map(t => `
+                <div class="time-slot-book" onclick="selectBookTime(this, '${t}')">${t}</div>
+            `).join('');
+        } else {
+            slotsContainer.innerHTML = '<p style="color: #FF9500; grid-column: 1/-1;">No hay horarios disponibles para esta fecha</p>';
+        }
+    } catch (e) {
+        slotsContainer.innerHTML = '<p style="color: #FF3B30; grid-column: 1/-1;">Error cargando horarios</p>';
+    }
+
+    validateBookForm();
+}
+
+function selectBookTime(el, time) {
+    document.querySelectorAll('.time-slot-book').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedBookTime = time;
+    validateBookForm();
+}
+
+// Validate form completeness
+function validateBookForm() {
+    const service = document.getElementById('book-service').value;
+    const date = document.getElementById('book-date').value;
+    const btn = document.getElementById('btn-book-submit');
+
+    btn.disabled = !(selectedClientId && service && date && selectedBookTime);
+}
+
+// Submit booking
+async function submitBooking() {
+    const btn = document.getElementById('btn-book-submit');
+    const errorEl = document.getElementById('book-error');
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Agendando...';
+    errorEl.style.display = 'none';
+
+    try {
+        const res = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+                client_id: selectedClientId,
+                service_id: document.getElementById('book-service').value,
+                booking_date: document.getElementById('book-date').value,
+                booking_time: selectedBookTime + ':00'
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            // Show success
+            document.getElementById('book-form-container').style.display = 'none';
+            document.getElementById('book-success-msg').textContent = data.message;
+
+            const date = new Date(document.getElementById('book-date').value + 'T00:00:00');
+            const dateStr = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+            document.getElementById('book-success-detail').textContent = `${dateStr} a las ${selectedBookTime}`;
+            document.getElementById('book-success').classList.add('show');
+
+            // Refresh other tabs
+            refreshAllViews();
+        } else {
+            errorEl.textContent = data.error || 'Error al agendar la cita';
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+        }
+    } catch (e) {
+        errorEl.textContent = 'Error de conexión';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+    }
+
+    btn.textContent = '📅 Agendar Cita';
+}
+
+// Reset booking form
+function resetBookForm() {
+    clearSelectedClient();
+    document.getElementById('book-service').value = '';
+    document.getElementById('book-date').value = '';
+    document.getElementById('book-time-slots').innerHTML = '<p style="color: #999; grid-column: 1/-1;">Selecciona una fecha primero</p>';
+    selectedBookTime = null;
+    document.getElementById('book-error').style.display = 'none';
+    document.getElementById('book-form-container').style.display = 'block';
+    document.getElementById('book-success').classList.remove('show');
+    validateBookForm();
+}
+
+// Initialize booking tab
+function initBookingTab() {
+    loadServicesForBooking();
+    setupClientSearch();
+
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('book-date').min = today;
+
+    // Date change → load times
+    document.getElementById('book-date').addEventListener('change', loadAvailableTimes);
+
+    // Service change → validate
+    document.getElementById('book-service').addEventListener('change', validateBookForm);
+
+    // Submit button
+    document.getElementById('btn-book-submit').addEventListener('click', submitBooking);
+}
+
+// =============================================
+// CAMBIO DE CONTRASEÑA
+// =============================================
+
+document.getElementById('btn-change-password').addEventListener('click', () => {
+    document.getElementById('change-password-modal').style.display = 'flex';
+});
+
+document.getElementById('btn-close-password-modal').addEventListener('click', () => {
+    document.getElementById('change-password-modal').style.display = 'none';
+    document.getElementById('new-password').value = '';
+});
+
+document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPassword = document.getElementById('new-password').value;
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+        const response = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/change-password`, {
+            method: 'PUT',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ newPassword })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            alert('Contraseña actualizada correctamente. Por favor inicia sesión nuevamente con tu nueva contraseña.');
+            document.getElementById('btn-logout').click(); // Force logout
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo actualizar'));
+        }
+    } catch (error) {
+        console.error('Error changing password:', error);
+        alert('Error de conexión');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+        document.getElementById('change-password-modal').style.display = 'none';
+        document.getElementById('new-password').value = '';
+    }
+});

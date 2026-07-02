@@ -4,7 +4,8 @@
  */
 
 // BUG-12 FIX: Detectar origin dinámicamente
-const API_BASE = window.location.origin + '/api';
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+const API_BASE = IS_LOCAL ? window.location.origin + '/api' : 'https://auba-api.onrender.com/api';
 
 // Datos por defecto (Fallback)
 let MANICURISTS = [

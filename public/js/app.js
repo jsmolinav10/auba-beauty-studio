@@ -51,7 +51,8 @@ function initServices() {
     if (!list) return;
 
     // BUG-27 FIX: Intentar cargar del API primero, fallback a datos locales
-    const API_BASE = window.location.origin + '/api';
+    const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+    const API_BASE = IS_LOCAL ? window.location.origin + '/api' : 'https://auba-api.onrender.com/api';
     fetch(`${API_BASE}/services`)
         .then(res => res.json())
         .then(data => {
@@ -99,10 +100,14 @@ function initScrollEffects() {
     // BUG-22 FIX: Hamburger menu toggle
     const menuToggle = document.querySelector('.mobile-menu-toggle');
     const mainNav = document.querySelector('.main-nav');
+    const headerActions = document.querySelector('.header-actions');
+    const glassHeader = document.querySelector('.glass-header');
     if (menuToggle && mainNav) {
         menuToggle.addEventListener('click', () => {
             mainNav.classList.toggle('mobile-open');
             menuToggle.classList.toggle('active');
+            if (headerActions) headerActions.classList.toggle('mobile-open');
+            if (glassHeader) glassHeader.classList.toggle('menu-expanded');
         });
 
         // Cerrar menú al hacer clic en un enlace
@@ -110,6 +115,8 @@ function initScrollEffects() {
             link.addEventListener('click', () => {
                 mainNav.classList.remove('mobile-open');
                 menuToggle.classList.remove('active');
+                if (headerActions) headerActions.classList.remove('mobile-open');
+                if (glassHeader) glassHeader.classList.remove('menu-expanded');
             });
         });
     }

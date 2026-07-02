@@ -205,111 +205,114 @@
             border-radius: var(--radius-lg);
             padding: 24px;
             margin-bottom: 24px;
+            box-shadow: var(--shadow-md);
         }
 
         .section h3 {
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            margin: 0 0 20px 0;
+            font-size: 1rem;
         }
 
         /* Booking Cards */
         .bookings-list {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
         }
 
         .booking-card {
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            border-left: 4px solid var(--color-accent);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
+            background: #FAFAFA;
+            border-left: 4px solid #E5E5EA;
+            border-radius: 12px;
+            padding: 16px;
         }
 
         .booking-card.pending {
             border-left-color: var(--color-warning);
-            background: #FFFBF0;
-        }
-
-        .booking-card.in-progress {
-            border-left-color: #007AFF;
-            background: #F0F7FF;
         }
 
         .booking-card.confirmed {
             border-left-color: var(--color-success);
         }
 
+        .booking-card.in_progress {
+            border-left-color: #007AFF;
+        }
+
+        .booking-card.completed {
+            border-left-color: #8E8E93;
+        }
+
+        .booking-card.no_show {
+            border-left-color: var(--color-error);
+        }
+
         .booking-info {
-            flex: 1;
-            min-width: 200px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
         .booking-time {
-            font-weight: 600;
             font-size: 1.2rem;
-            color: var(--color-text-main);
+            font-weight: 700;
+            min-width: 60px;
         }
 
         .booking-details {
-            color: var(--color-text-secondary);
-            margin-top: 4px;
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.5;
         }
 
         .booking-status {
-            padding: 4px 12px;
-            border-radius: 50px;
             font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
             font-weight: 600;
             text-transform: uppercase;
         }
 
         .status-pending {
-            background: #FFF3CD;
-            color: #856404;
+            background: #FFF3E0;
+            color: #E65100;
         }
 
         .status-confirmed {
-            background: #D4EDDA;
-            color: #155724;
+            background: #E8F5E9;
+            color: #2E7D32;
         }
 
-        .status-in-progress {
-            background: #CCE5FF;
-            color: #004085;
+        .status-in_progress {
+            background: #E3F2FD;
+            color: #1565C0;
         }
 
         .status-completed {
-            background: #E2E3E5;
-            color: #383D41;
+            background: #F5F5F5;
+            color: #666;
         }
 
-        .status-no-show {
-            background: #F8D7DA;
-            color: #721C24;
+        .status-no_show {
+            background: #FFEBEE;
+            color: #C62828;
         }
 
         .booking-actions {
             display: flex;
             gap: 8px;
+            margin-top: 12px;
             flex-wrap: wrap;
         }
 
         .action-btn {
             padding: 8px 16px;
-            border-radius: 8px;
             border: none;
-            cursor: pointer;
-            font-weight: 500;
+            border-radius: 20px;
+            font-weight: 600;
             font-size: 13px;
+            cursor: pointer;
             transition: 0.2s;
         }
 
@@ -324,7 +327,7 @@
         }
 
         .action-btn.complete {
-            background: var(--color-text-main);
+            background: var(--color-accent);
             color: white;
         }
 
@@ -333,69 +336,227 @@
             color: white;
         }
 
-        .action-btn:hover {
-            opacity: 0.9;
-            transform: scale(1.02);
-        }
-
         .action-btn:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
         }
 
-        /* Calendar */
+        /* Mini Calendar */
         .simple-calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 8px;
-            margin-top: 16px;
+            margin-bottom: 24px;
         }
 
-        .day-cell {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
+        .cal-day {
+            text-align: center;
+            padding: 10px 4px;
+            border-radius: 12px;
+            font-size: 14px;
             cursor: pointer;
-            border: 1px solid #eee;
-            font-weight: 500;
             transition: 0.2s;
         }
 
-        .day-cell.selected {
-            background: var(--color-accent);
+        .cal-day:hover {
+            background: #F5F5F7;
+        }
+
+        .cal-day.selected {
+            background: var(--color-text-main);
             color: white;
         }
 
-        .day-cell:hover:not(.selected) {
-            background: #f0f0f0;
+        .cal-day .day-name {
+            font-size: 11px;
+            color: #999;
+            display: block;
+            margin-bottom: 4px;
         }
 
-        .day-cell.today {
-            border-color: var(--color-accent);
-            border-width: 2px;
+        .cal-day.selected .day-name {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
         }
 
         .hidden {
             display: none !important;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: var(--color-text-secondary);
+        /* Agendar Cita Form */
+        .book-form-group {
+            margin-bottom: 20px;
         }
 
-        .empty-state p {
-            margin: 0;
+        .book-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-main);
+        }
+
+        .book-form-group input,
+        .book-form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #E5E5EA;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .book-form-group input:focus,
+        .book-form-group select:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #E5E5EA;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #F5F5F5;
+            transition: background 0.15s;
+        }
+
+        .search-result-item:hover {
+            background: #FFF8E1;
+        }
+
+        .search-result-item .client-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .search-result-item .client-phone {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .selected-client-badge {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: #E8F5E9;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-top: 8px;
+        }
+
+        .selected-client-badge.show {
+            display: flex;
+        }
+
+        .selected-client-badge .remove-client {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #C62828;
+            margin-left: auto;
+        }
+
+        .time-slots-book {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .time-slot-book {
+            text-align: center;
+            padding: 10px;
+            border: 2px solid #E5E5EA;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        .time-slot-book:hover {
+            border-color: var(--color-accent);
+        }
+
+        .time-slot-book.selected {
+            background: var(--color-text-main);
+            color: white;
+            border-color: var(--color-text-main);
+        }
+
+        .btn-book-submit {
+            background: var(--color-accent);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 999px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.3s;
+            margin-top: 12px;
+        }
+
+        .btn-book-submit:hover {
+            background: var(--color-text-main);
+        }
+
+        .btn-book-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .book-success {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .book-success.show {
+            display: block;
+        }
+
+        .book-search-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
 
         @media (max-width: 600px) {
-            .booking-card {
+            .booking-info {
                 flex-direction: column;
-                align-items: flex-start;
             }
 
             .booking-actions {
@@ -404,6 +565,10 @@
 
             .action-btn {
                 flex: 1;
+            }
+
+            .book-search-row {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -439,7 +604,10 @@
         <div id="dashboard-view" class="dashboard">
             <div class="header">
                 <h2 id="welcome-msg">Hola, Manicurista</h2>
-                <button id="btn-logout" class="logout-btn">Cerrar Sesión</button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-change-password" class="logout-btn" style="border-color: var(--color-accent); color: var(--color-accent);">Cambiar Contraseña</button>
+                    <button id="btn-logout" class="logout-btn">Cerrar Sesión</button>
+                </div>
             </div>
 
             <!-- Tabs -->
@@ -453,6 +621,10 @@
                 </button>
                 <button class="tab-btn" data-tab="calendar">
                     🗓️ Mi Agenda
+                </button>
+                <button class="tab-btn" data-tab="book"
+                    style="background: var(--color-accent); color: white; border-color: var(--color-accent);">
+                    ➕ Agendar Cita
                 </button>
             </div>
 
@@ -498,6 +670,89 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Tab: Agendar Cita -->
+            <div id="tab-book" class="tab-content">
+                <div class="section">
+                    <h3>➕ Agendar Cita para Clienta</h3>
+
+                    <div id="book-form-container">
+                        <!-- Buscar clienta -->
+                        <div class="book-form-group">
+                            <label>🔍 Buscar Clienta</label>
+                            <div class="book-search-row">
+                                <div class="search-wrapper">
+                                    <input type="text" id="search-client-phone" placeholder="Buscar por celular..."
+                                        autocomplete="off">
+                                    <div id="search-results-phone" class="search-results"></div>
+                                </div>
+                                <div class="search-wrapper">
+                                    <input type="text" id="search-client-name" placeholder="Buscar por nombre..."
+                                        autocomplete="off">
+                                    <div id="search-results-name" class="search-results"></div>
+                                </div>
+                            </div>
+                            <div id="selected-client-badge" class="selected-client-badge">
+                                <span>✅ <strong id="selected-client-name"></strong> — <span
+                                        id="selected-client-phone"></span></span>
+                                <button class="remove-client" onclick="clearSelectedClient()">✕</button>
+                            </div>
+                        </div>
+
+                        <!-- Servicio -->
+                        <div class="book-form-group">
+                            <label>💅 Servicio</label>
+                            <select id="book-service">
+                                <option value="">Selecciona un servicio...</option>
+                            </select>
+                        </div>
+
+                        <!-- Fecha -->
+                        <div class="book-form-group">
+                            <label>📅 Fecha</label>
+                            <input type="date" id="book-date" min="">
+                        </div>
+
+                        <!-- Hora -->
+                        <div class="book-form-group">
+                            <label>🕐 Hora disponible</label>
+                            <div id="book-time-slots" class="time-slots-book">
+                                <p style="color: #999; grid-column: 1/-1;">Selecciona una fecha primero</p>
+                            </div>
+                        </div>
+
+                        <button id="btn-book-submit" class="btn-book-submit" disabled>📅 Agendar Cita</button>
+                        <div id="book-error"
+                            style="color: #FF3B30; text-align: center; margin-top: 12px; display: none;"></div>
+                    </div>
+
+                    <!-- Success -->
+                    <div id="book-success" class="book-success">
+                        <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+                        <h3 id="book-success-msg">¡Cita agendada exitosamente!</h3>
+                        <p style="color: #666; margin-top: 8px;" id="book-success-detail"></p>
+                        <button class="btn-book-submit" onclick="resetBookForm()" style="margin-top: 20px;">➕ Agendar
+                            Otra Cita</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cambio de Contraseña -->
+    <div id="change-password-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;">
+            <h3 style="margin-top: 0;">Cambiar Contraseña</h3>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label>Nueva Contraseña</label>
+                    <input type="password" id="new-password" required minlength="4">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <button type="submit" class="btn-primary" style="flex: 1;">Guardar</button>
+                    <button type="button" id="btn-close-password-modal" class="btn-primary" style="flex: 1; background: #666;">Cancelar</button>
+                </div>
+            </form>
         </div>
     </div>
 

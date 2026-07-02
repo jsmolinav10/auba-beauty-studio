@@ -5,7 +5,7 @@
 
 const AdminApp = {
     // BUG-12 FIX: Detectar origin dinámicamente
-    API_BASE: window.location.origin + '/api',
+    API_BASE: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')) ? window.location.origin + '/api' : 'https://auba-api.onrender.com/api',
     SESSION_KEY: 'auba_admin_session',
     TOKEN_KEY: 'auba_admin_token',
     currentSection: 'dashboard',
@@ -437,10 +437,11 @@ const AdminApp = {
                         ${m.available ? 'Disponible' : 'No disponible'}
                     </span>
                     <div class="card-actions">
-                        <button class="btn-icon" onclick="AdminApp.editManicurist(${m.id})">✏️</button>
-                        <button class="btn-icon" onclick="AdminApp.toggleManicuristAvailability(${m.id}, ${!m.available})">
+                        <button class="btn-icon" onclick="AdminApp.editManicurist(${m.id})" title="Editar">✏️</button>
+                        <button class="btn-icon" onclick="AdminApp.toggleManicuristAvailability(${m.id}, ${!m.available})" title="Disponibilidad">
                             ${m.available ? '🚫' : '✓'}
                         </button>
+                        <button class="btn-icon" onclick="AdminApp.resetManicuristPassword(${m.id})" title="Resetear Contraseña a auba2026">🔄</button>
                         <button class="btn-icon" onclick="AdminApp.deleteManicurist(${m.id})" title="Eliminar">🗑️</button>
                     </div>
                 </div>
@@ -566,6 +567,24 @@ const AdminApp = {
         }
     },
 
+    async resetManicuristPassword(id) {
+        if (!confirm('¿Estás seguro de resetear la contraseña de esta manicurista a "auba2026"?')) return;
+
+        try {
+            const response = await this.authFetch(`${this.API_BASE}/admin/manicurists/${id}/reset-password`, { method: 'PUT' });
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Contraseña restablecida a: auba2026');
+            } else {
+                alert('Error: ' + (result.error || 'No se pudo restablecer la contraseña'));
+            }
+        } catch (error) {
+            console.error('Error resetting manicurist password:', error);
+            alert('Error de conexión');
+        }
+    },
+
     // ============================================
     // USERS MANAGEMENT
     // ============================================
@@ -584,6 +603,9 @@ const AdminApp = {
                     <td>${u.email || '-'}</td>
                     <td>${this.formatDate(u.created_at)}</td>
                     <td>${u.booking_count || 0}</td>
+                    <td>
+                        <button class="btn-icon" onclick="AdminApp.resetUserPassword(${u.id})" title="Resetear Contraseña a auba2026">🔄</button>
+                    </td>
                 </tr>
             `).join('');
         } catch (error) {
@@ -597,6 +619,24 @@ const AdminApp = {
             const text = row.textContent.toLowerCase();
             row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
         });
+    },
+
+    async resetUserPassword(id) {
+        if (!confirm('¿Estás seguro de resetear la contraseña de este cliente a "auba2026"?')) return;
+
+        try {
+            const response = await this.authFetch(`${this.API_BASE}/admin/users/${id}/reset-password`, { method: 'PUT' });
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Contraseña restablecida a: auba2026');
+            } else {
+                alert('Error: ' + (result.error || 'No se pudo restablecer la contraseña'));
+            }
+        } catch (error) {
+            console.error('Error resetting user password:', error);
+            alert('Error de conexión');
+        }
     },
 
     // ============================================

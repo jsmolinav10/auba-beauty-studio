@@ -4,7 +4,8 @@
  */
 
 // BUG-12 FIX: Detectar origin dinámicamente
-const API_BASE = window.location.origin + '/api';
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+const API_BASE = IS_LOCAL ? window.location.origin + '/api' : 'https://auba-api.onrender.com/api';
 const SESSION_KEY = 'auba_current_user';
 
 const TIME_SLOTS = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
@@ -406,3 +407,50 @@ async function confirmReschedule() {
     btn.disabled = false;
     btn.textContent = 'Confirmar Reagendamiento';
 }
+
+// =============================================
+// CAMBIO DE CONTRASEÑA
+// =============================================
+
+document.getElementById('btn-change-password').addEventListener('click', () => {
+    document.getElementById('change-password-modal').classList.remove('hidden');
+});
+
+document.getElementById('btn-cancel-password').addEventListener('click', () => {
+    document.getElementById('change-password-modal').classList.add('hidden');
+    document.getElementById('new-password').value = '';
+});
+
+document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPassword = document.getElementById('new-password').value;
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+        const response = await fetch(`${API_BASE}/auth/change-password`, {
+            method: 'PUT',
+            headers: userAuthHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ newPassword })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            alert('Contraseña actualizada correctamente. Por favor inicia sesión nuevamente.');
+            localStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem('auba_auth_token');
+            window.location.href = 'index.html'; // Redirect to login
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo actualizar'));
+        }
+    } catch (error) {
+        console.error('Error changing password:', error);
+        alert('Error de conexión');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+        document.getElementById('change-password-modal').classList.add('hidden');
+        document.getElementById('new-password').value = '';
+    }
+});
