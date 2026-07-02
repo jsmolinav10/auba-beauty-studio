@@ -5,7 +5,7 @@
 
 const AdminApp = {
     // BUG-12 FIX: Detectar origin dinámicamente
-    API_BASE: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')) ? window.location.origin + '/api' : 'https://auba-api.onrender.com/api',
+    API_BASE: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')) ? window.location.origin + '/api' : 'https://auba-beauty-studio.onrender.com/api',
     SESSION_KEY: 'auba_admin_session',
     TOKEN_KEY: 'auba_admin_token',
     currentSection: 'dashboard',
