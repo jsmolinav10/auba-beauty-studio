@@ -99,7 +99,7 @@ allowedOrigins.push('http://localhost:3000', 'http://192.168.40.12:3000', 'https
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
+        if (allowedOrigins.includes(origin) || (origin && origin.endsWith('.vercel.app'))) {
             return callback(null, true);
         }
         return callback(new Error('Not allowed by CORS'));
