@@ -160,7 +160,7 @@ async function loadPendingBookings() {
     const container = document.getElementById('pending-bookings');
 
     try {
-        const response = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings?status=pending`, {
+        const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings?status=pending`, {
             headers: authHeaders()
         });
         const bookings = await response.json();
@@ -194,7 +194,7 @@ async function loadTodayBookings() {
     const today = new Date().toISOString().split('T')[0];
 
     try {
-        const response = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings?date=${today}`, {
+        const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings?date=${today}`, {
             headers: authHeaders()
         });
         const bookings = await response.json();
@@ -275,7 +275,7 @@ async function loadBookingsForDate(date) {
     label.textContent = formatted;
 
     try {
-        const response = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings?date=${date}`, {
+        const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings?date=${date}`, {
             headers: authHeaders()
         });
         const bookings = await response.json();
@@ -445,7 +445,7 @@ function attachActionListeners() {
                 btn.textContent = 'Verificando...';
 
                 try {
-                    const response = await fetch(
+                    const response = await authFetch(
                         `${API_BASE}/manicurists/${currentManicurist.id}/bookings/${bookingId}/verify-payment`,
                         {
                             method: 'PUT',
@@ -481,7 +481,7 @@ function attachActionListeners() {
                 btn.textContent = 'Procesando...';
 
                 try {
-                    const response = await fetch(
+                    const response = await authFetch(
                         `${API_BASE}/manicurists/${currentManicurist.id}/bookings/${bookingId}/complete-service`,
                         {
                             method: 'PUT',
@@ -528,7 +528,7 @@ function attachActionListeners() {
             }
 
             try {
-                const response = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings/${bookingId}/status`, {
+                const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings/${bookingId}/status`, {
                     method: 'PUT',
                     headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ status: newStatus })
@@ -622,7 +622,7 @@ async function searchClients(query, source) {
     }
 
     try {
-        const res = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/search-clients?q=${encodeURIComponent(query)}`, { headers: authHeaders() });
+        const res = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/search-clients?q=${encodeURIComponent(query)}`, { headers: authHeaders() });
         const data = await res.json();
 
         if (data.success && data.clients.length > 0) {
@@ -689,7 +689,7 @@ async function loadAvailableTimes() {
     slotsContainer.innerHTML = '<p style="color: #999; grid-column: 1/-1;">Cargando horarios...</p>';
 
     try {
-        const res = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/available-times?date=${date}`, { headers: authHeaders() });
+        const res = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/available-times?date=${date}`, { headers: authHeaders() });
         const data = await res.json();
 
         if (data.success && data.times.length > 0) {
@@ -732,7 +732,7 @@ async function submitBooking() {
     errorEl.style.display = 'none';
 
     try {
-        const res = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings`, {
+        const res = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings`, {
             method: 'POST',
             headers: authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
@@ -824,7 +824,7 @@ document.getElementById('change-password-form').addEventListener('submit', async
     btn.textContent = 'Guardando...';
 
     try {
-        const response = await fetch(`${API_BASE}/manicurists/${currentManicurist.id}/change-password`, {
+        const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/change-password`, {
             method: 'PUT',
             headers: authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ newPassword })
