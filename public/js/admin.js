@@ -238,18 +238,24 @@ const AdminApp = {
                 return;
             }
 
-            container.innerHTML = bookings.slice(0, 5).map(b => `
+            container.innerHTML = bookings.slice(0, 5).map(b => {
+                const dateFmt = this.formatDate(b.booking_date);
+                const timeStr = b.booking_time?.substring(0, 5) || '';
+                return `
                 <div class="booking-item">
                     <div class="booking-info">
                         <strong>${b.client_name}</strong>
                         <span>${b.service_title}</span>
                     </div>
-                    <div class="booking-time">
-                        <span>${this.formatDate(b.booking_date)}</span>
-                        <span>${b.booking_time?.substring(0, 5)}</span>
+                    <div class="booking-time" style="display:flex; align-items:center; gap:10px;">
+                        <div>
+                            <span style="display:block;">${dateFmt}</span>
+                            <span style="display:block;">${timeStr}</span>
+                        </div>
+                        <button class="btn-icon" style="color:#25D366; font-size:1.2rem;" onclick="AdminApp.sendWhatsAppReminder('${b.client_name}', '${b.client_phone}', '${dateFmt}', '${timeStr}', '${b.service_title}', '${b.manicurist_name}')" title="Enviar Recordatorio por WhatsApp">📱</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         } catch (error) {
             console.error('Error loading upcoming bookings:', error);
         }
@@ -282,6 +288,7 @@ const AdminApp = {
                     <td>${b.booking_time?.substring(0, 5)}</td>
                     <td><span class="status-badge status-${b.status}">${this.getStatusLabel(b.status)}</span></td>
                     <td>
+                        <button class="btn-icon" style="color:#25D366; font-size:1.2rem;" onclick="AdminApp.sendWhatsAppReminder('${b.client_name}', '${b.client_phone}', '${this.formatDate(b.booking_date)}', '${b.booking_time?.substring(0, 5)}', '${b.service_title}', '${b.manicurist_name}')" title="Enviar WhatsApp">📱</button>
                         <button class="btn-icon" onclick="AdminApp.updateBookingStatus(${b.id}, 'confirmed')">✓</button>
                         <button class="btn-icon" onclick="AdminApp.updateBookingStatus(${b.id}, 'cancelled')">✕</button>
                     </td>
@@ -301,8 +308,23 @@ const AdminApp = {
             });
             this.loadBookings();
         } catch (error) {
-            console.error('Error updating booking:', error);
+            console.error('Error updating status:', error);
         }
+    },
+
+    sendWhatsAppReminder(name, phone, date, time, service, manicurist) {
+        if (!phone) {
+            alert('El cliente no tiene un teléfono registrado válido.');
+            return;
+        }
+        let cleanPhone = phone.toString().replace(/\D/g, '');
+        if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
+        if (!cleanPhone.startsWith('57') && cleanPhone.length === 10) cleanPhone = '57' + cleanPhone;
+
+        const message = `⏰ *Recordatorio AUBA* ⏰\n\n¡Hola ${name}! 👋\n\nTe recordamos que tienes una cita con nosotras:\n\n📅 *Fecha:* ${date}\n🕐 *Hora:* ${time}\n💅 *Servicio:* ${service}\n👩‍💼 *Especialista:* ${manicurist}\n\n📍 Dirección: Calle Principal 123, Ciudad\n\n¡Te esperamos! 💅✨\n\n_Si no puedes asistir o quieres cambiar algo, por favor avísanos respondiendo a este mensaje._`;
+        
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
     },
 
     // ============================================
