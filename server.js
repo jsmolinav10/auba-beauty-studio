@@ -42,9 +42,9 @@ const db = require('./db');
 // ============================================
 
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'di3azqbni',
+    api_key: process.env.CLOUDINARY_API_KEY || '968518722423617',
+    api_secret: process.env.CLOUDINARY_API_SECRET || 'R3TOv5iRK5TS-U0gG1pAziju1Y4'
 });
 
 const cloudinaryStorage = new CloudinaryStorage({
