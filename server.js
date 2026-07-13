@@ -94,7 +94,7 @@ app.use(helmet({
 const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
     : [];
-allowedOrigins.push('http://localhost:3000', 'http://192.168.40.12:3000', 'https://auba-studio.vercel.app', 'https://beauty-studio-jsmolinav10-5854s-projects.vercel.app', 'https://beauty-studio-kappa.vercel.app');
+allowedOrigins.push('http://localhost:3000', 'http://192.168.40.12:3000', 'https://auba-studio.vercel.app', 'https://beauty-studio-jsmolinav10-5854s-projects.vercel.app', 'https://beauty-studio-kappa.vercel.app', 'https://auba-nails-studio.vercel.app');
 
 app.use(cors({
     origin: function (origin, callback) {
