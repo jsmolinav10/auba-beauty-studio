@@ -3,7 +3,7 @@
  * Estrategia: Cache First para estáticos, Network First para API
  */
 
-const CACHE_NAME = 'auba-pwa-v7';
+const CACHE_NAME = 'auba-pwa-v8';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
