@@ -571,6 +571,114 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* TIME GRID STYLES */
+        .agenda-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .agenda-date-nav {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 999px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            font-weight: 600;
+        }
+
+        .time-grid-container {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            padding: 20px 0;
+            position: relative;
+            min-height: 600px;
+            overflow-y: auto;
+        }
+
+        .time-grid-hours {
+            width: 80px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #eee;
+            position: relative;
+        }
+
+        .time-label {
+            height: 60px; /* 1 hour = 60px */
+            text-align: right;
+            padding-right: 10px;
+            font-size: 13px;
+            color: #888;
+            position: relative;
+            top: -10px; /* Center align with border */
+        }
+
+        .time-grid-content {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .time-grid-line {
+            height: 60px;
+            border-bottom: 1px solid #f5f5f5;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .time-block {
+            position: absolute;
+            left: 10px;
+            right: 20px;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border-left: 4px solid var(--color-accent);
+            z-index: 10;
+        }
+
+        .time-block:hover {
+            transform: scale(1.01);
+            z-index: 20;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .time-block .tb-client {
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .time-block .tb-service {
+            opacity: 0.8;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tb-pending { background-color: #FFF3E0; border-left-color: #FF9800; color: #E65100; }
+        .tb-confirmed { background-color: #E8F5E9; border-left-color: #4CAF50; color: #1B5E20; }
+        .tb-in_progress { background-color: #E3F2FD; border-left-color: #2196F3; color: #0D47A1; }
+        .tb-completed { background-color: #F5F5F5; border-left-color: #9E9E9E; color: #424242; }
+
+        @media (max-width: 768px) {
+            .grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+            .time-grid-hours { width: 60px; }
+            .time-block { left: 5px; right: 5px; }
+        }
     </style>
 </head>
 
@@ -654,19 +762,21 @@
 
             <!-- Tab: Calendar -->
             <div id="tab-calendar" class="tab-content">
-                <div class="section">
-                    <h3>🗓️ Mi Agenda</h3>
-                    <div class="simple-calendar" id="mini-calendar">
-                        <!-- Days injected by JS -->
+                <div class="agenda-header">
+                    <h3>Mi Agenda</h3>
+                    <div class="agenda-date-nav">
+                        <button class="btn-icon" id="agenda-prev-day">◀</button>
+                        <span id="agenda-date-label">Hoy</span>
+                        <button class="btn-icon" id="agenda-next-day">▶</button>
                     </div>
                 </div>
 
-                <div class="section">
-                    <h3>Citas para <span id="selected-date-label">hoy</span></h3>
-                    <div id="calendar-bookings" class="bookings-list">
-                        <div class="empty-state">
-                            <p>Selecciona una fecha para ver tus citas.</p>
-                        </div>
+                <div class="time-grid-container">
+                    <div class="time-grid-hours" id="time-grid-hours">
+                        <!-- Hours 9 AM to 6 PM injected here -->
+                    </div>
+                    <div class="time-grid-content" id="time-grid-content">
+                        <!-- Background lines and Booking blocks injected here -->
                     </div>
                 </div>
             </div>
@@ -753,6 +863,20 @@
                     <button type="button" id="btn-close-password-modal" class="btn-primary" style="flex: 1; background: #666;">Cancelar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Agenda Details Modal -->
+    <div class="modal-overlay" id="agenda-modal">
+        <div class="modal">
+            <h2 id="agenda-modal-title">Detalles de la Cita</h2>
+            <div id="agenda-modal-content" style="margin: 20px 0; font-size: 15px; line-height: 1.6;">
+                <!-- Content injected here -->
+            </div>
+            <div id="agenda-modal-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+                <!-- Buttons injected here -->
+            </div>
+            <button class="btn-primary" style="margin-top: 10px; background-color: #ddd; color: #333;" onclick="closeAgendaModal()">Cerrar</button>
         </div>
     </div>
 

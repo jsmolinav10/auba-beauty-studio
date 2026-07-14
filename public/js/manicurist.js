@@ -81,7 +81,7 @@ function showDashboard() {
     // Load data
     loadPendingBookings();
     loadTodayBookings();
-    renderMiniCalendar();
+    initTimeGrid();
     loadBookingsForDate(selectedDate); // Initial load for Agenda tab
     initBookingTab();
 }
@@ -254,7 +254,7 @@ function renderMiniCalendar() {
 // Select Date (for calendar tab)
 window.selectDate = function (dateStr) {
     selectedDate = dateStr;
-    renderMiniCalendar();
+    initTimeGrid();
     loadBookingsForDate(dateStr);
 };
 

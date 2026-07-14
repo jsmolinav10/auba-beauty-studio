@@ -37,7 +37,8 @@ router.get('/:id/bookings', async (req, res) => {
                 u.name as client_name,
                 u.phone as client_phone,
                 s.title as service_title,
-                s.price as service_price
+                s.price as service_price,
+                s.duration as service_duration
             FROM bookings b
             JOIN users u ON b.user_id = u.id
             JOIN services s ON b.service_id = s.id
