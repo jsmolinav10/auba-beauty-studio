@@ -110,6 +110,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static('public'));
 
+// Trust proxy is required when hosted on platforms like Render or Vercel
+// so that rate limiting uses the actual client IP instead of the proxy IP.
+app.set('trust proxy', 1);
+
 // Rate limiting global
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

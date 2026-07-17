@@ -1318,12 +1318,24 @@
         async function loadManicurists() {
             try {
                 const response = await fetch(`${API_BASE}/manicurists`);
-                manicurists = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // Ensure data is an array before assigning
+                if (Array.isArray(data)) {
+                    manicurists = data;
+                } else {
+                    console.error("API returned non-array for manicurists:", data);
+                    manicurists = [];
+                }
+                
                 renderManicurists();
             } catch (error) {
                 console.error('Error loading manicurists:', error);
                 document.getElementById('manicurists-list').innerHTML = `
-                    <div class="error-message">Error cargando manicuristas. Verifica que el servidor esté activo.</div>
+                    <div class="error-message">Error cargando manicuristas. Verifica que el servidor est&eacute; activo.</div>
                 `;
             }
         }
