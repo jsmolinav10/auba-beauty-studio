@@ -192,15 +192,62 @@ app.use((req, res) => {
 // ============================================
 
 Promise.all([initDB(), initAdminPassword()]).then(() => {
-    app.listen(PORT, () => {
-        console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-        console.log(`📱 Abre http://localhost:${PORT}/index.html en tu navegador`);
+    if (require.main === module) {
+        app.listen(PORT, () => {
+            console.log(`?? Servidor corriendo en http://localhost:`);
+            console.log(`?? Abre http://localhost:/index.html en tu navegador`);
 
-        // Recordatorios diarios a las 9:00 AM
-        cron.schedule('0 9 * * *', () => {
-            console.log('⏰ Ejecutando tarea programada: recordatorios diarios');
-            sendDailyReminders(app.locals.pool);
+            cron.schedule('0 9 * * *', () => {
+                console.log('? Ejecutando tarea programada: recordatorios diarios');
+                sendDailyReminders(app.locals.pool);
+            });
+            console.log('? Recordatorios programados para las 9:00 AM diariamente');
+
+            cron.schedule('0 2 1 * *', async () => {
+                console.log('?? Limpieza de comprobantes antiguos en Cloudinary...');
+                try {
+                    const pool = app.locals.pool;
+                    const sixMonthsAgo = new Date();
+                    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+                    const cutoffDate = sixMonthsAgo.toISOString().split('T')[0];
+
+                    const [oldProofs] = await pool.execute(
+                        `SELECT id, payment_proof FROM bookings 
+                         WHERE payment_proof IS NOT NULL 
+                         AND payment_proof LIKE '%cloudinary%'
+                         AND booking_date < ?`,
+                        [cutoffDate]
+                    );
+
+                    let deleted = 0;
+                    for (const booking of oldProofs) {
+                        try {
+                            const url = booking.payment_proof;
+                            const parts = url.split('/');
+                            const folderIdx = parts.indexOf('auba-proofs');
+                            if (folderIdx !== -1) {
+                                const filename = parts.slice(folderIdx).join('/').replace(/\.[^.]+$/, '');
+                                await cloudinary.uploader.destroy(filename);
+                            }
+                            await pool.execute('UPDATE bookings SET payment_proof = NULL WHERE id = ?', [booking.id]);
+                            deleted++;
+                        } catch (err) {
+                            console.error(`Error eliminando proof de booking :`, err.message);
+                        }
+                    }
+                    console.log(`?? Limpieza completada:  comprobantes eliminados de  encontrados`);
+                } catch (error) {
+                    console.error('Error en limpieza de comprobantes:', error);
+                }
+            });
+            console.log('?? Limpieza de comprobantes programada para el 1ro de cada mes');
         });
+    }
+}).catch(err => {
+    console.error('Error inicializando backend:', err);
+});
+
+module.exports = app;
         console.log('⏰ Recordatorios programados para las 9:00 AM diariamente');
 
         // Limpieza mensual de comprobantes antiguos (>6 meses) en Cloudinary
@@ -249,3 +296,4 @@ Promise.all([initDB(), initAdminPassword()]).then(() => {
         console.log('🧹 Limpieza de comprobantes programada para el 1ro de cada mes');
     });
 });
+

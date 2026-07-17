@@ -5,7 +5,7 @@
 
 // BUG-12 FIX: Detectar origin dinámicamente
 const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
-const API_BASE = IS_LOCAL ? window.location.origin + '/api' : 'https://auba-beauty-studio.onrender.com/api';
+const API_BASE = IS_LOCAL ? window.location.origin + '/api' : '/api';
 const SESSION_KEY = 'auba_current_user';
 
 const TIME_SLOTS = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
@@ -454,3 +454,4 @@ document.getElementById('change-password-form').addEventListener('submit', async
         document.getElementById('new-password').value = '';
     }
 });
+
