@@ -234,6 +234,44 @@ function initTimeGrid() {
     hoursContainer.innerHTML = hoursHtml;
     // We only set the background lines once, bookings will be appended as absolute elements
     contentContainer.innerHTML = contentHtml;
+    
+    updateCurrentTimeIndicator();
+    setInterval(updateCurrentTimeIndicator, 60000); // Update every minute
+}
+
+function updateCurrentTimeIndicator() {
+    const container = document.getElementById('time-grid-content');
+    if (!container) return;
+    
+    // Remove existing if any
+    const existing = document.getElementById('current-time-line');
+    if (existing) existing.remove();
+    
+    // Only show if selectedDate is today
+    const todayStr = getLocalDateISO(new Date());
+    if (selectedDate !== todayStr) return;
+    
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes();
+    
+    // Grid starts at 8:00 AM. 1 hour = 60px height.
+    if (h >= 8 && h <= 20) {
+        const topPx = (h - 8) * 60 + m;
+        const line = document.createElement('div');
+        line.id = 'current-time-line';
+        line.className = 'current-time-indicator';
+        line.style.top = `${topPx}px`;
+        container.appendChild(line);
+        
+        // Scroll to current time smoothly when first initialized
+        if (!existing) {
+            container.parentElement.scrollTo({
+                top: Math.max(0, topPx - 100),
+                behavior: 'smooth'
+            });
+        }
+    }
 }
 
 function changeAgendaDate(offset) {
