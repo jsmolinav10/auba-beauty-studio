@@ -194,8 +194,6 @@ app.use((req, res) => {
 Promise.all([initDB(), initAdminPassword()]).then(() => {
     if (require.main === module) {
         app.listen(PORT, () => {
-            console.log(`?? Servidor corriendo en http://localhost:`);
-            console.log(`?? Abre http://localhost:/index.html en tu navegador`);
             console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
             console.log(`🌐 Abre http://localhost:${PORT}/index.html en tu navegador`);
 
@@ -237,12 +235,12 @@ Promise.all([initDB(), initAdminPassword()]).then(() => {
                             console.error(`Error eliminando proof de booking ${booking.id}:`, err.message);
                         }
                     }
-                    console.log(`?? Limpieza completada:  comprobantes eliminados de  encontrados`);
+                    console.log(`🧹 Limpieza completada: ${deleted} comprobantes eliminados de ${oldProofs.length} encontrados`);
                 } catch (error) {
                     console.error('Error en limpieza de comprobantes:', error);
                 }
             });
-            console.log('?? Limpieza de comprobantes programada para el 1ro de cada mes');
+            console.log('🧹 Limpieza de comprobantes programada para el 1ro de cada mes');
         });
     }
 }).catch(err => {
