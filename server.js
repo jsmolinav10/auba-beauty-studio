@@ -124,6 +124,7 @@ app.use('/api', globalLimiter);
 
 // Make pool and uploadProof available to route modules
 app.locals.uploadProof = uploadProof;
+app.locals.pool = db; // Set synchronously for serverless compatibility
 
 // ============================================
 // DB CONFIG
