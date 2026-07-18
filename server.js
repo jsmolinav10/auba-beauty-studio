@@ -108,7 +108,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Trust proxy is required when hosted on platforms like Render or Vercel
 // so that rate limiting uses the actual client IP instead of the proxy IP.
