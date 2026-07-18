@@ -81,7 +81,7 @@ function showDashboard() {
     // Load data
     loadPendingBookings();
     loadTodayBookings();
-    initTimeGrid();
+    renderMiniCalendar();
     loadBookingsForDate(selectedDate); // Initial load for Agenda tab
     initBookingTab();
 }
@@ -213,155 +213,86 @@ async function loadTodayBookings() {
     }
 }
 
-// Init Time Grid Background
-function initTimeGrid() {
-    const hoursContainer = document.getElementById('time-grid-hours');
-    const contentContainer = document.getElementById('time-grid-content');
-    
-    if (!hoursContainer) return;
-    
-    let hoursHtml = '';
-    let contentHtml = '';
-    
-    // Generate hours from 8:00 to 20:00 (12 hours span)
-    for (let h = 8; h <= 20; h++) {
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        const displayHour = h > 12 ? h - 12 : (h === 0 ? 12 : h);
-        hoursHtml += `<div class="time-label">${displayHour}:00 ${ampm}</div>`;
-        contentHtml += `<div class="time-grid-line"></div>`;
+// Render Mini Calendar (30 days)
+function renderMiniCalendar() {
+    const container = document.getElementById('mini-calendar');
+    const today = new Date();
+    const todayStr = getLocalDateISO(today);
+
+    // Week day initials
+    const dayNames = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+    let html = '';
+
+    // Add headers for days starting from today's day of week
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        html += `<div style="text-align: center; font-size: 11px; color: #999; font-weight: 600; margin-bottom: 8px;">${dayNames[date.getDay()]}</div>`;
     }
-    
-    hoursContainer.innerHTML = hoursHtml;
-    // We only set the background lines once, bookings will be appended as absolute elements
-    contentContainer.innerHTML = contentHtml;
-    
-    updateCurrentTimeIndicator();
-    setInterval(updateCurrentTimeIndicator, 60000); // Update every minute
-}
 
-function updateCurrentTimeIndicator() {
-    const container = document.getElementById('time-grid-content');
-    if (!container) return;
-    
-    // Remove existing if any
-    const existing = document.getElementById('current-time-line');
-    if (existing) existing.remove();
-    
-    // Only show if selectedDate is today
-    const todayStr = getLocalDateISO(new Date());
-    if (selectedDate !== todayStr) return;
-    
-    const now = new Date();
-    const h = now.getHours();
-    const m = now.getMinutes();
-    
-    // Grid starts at 8:00 AM. 1 hour = 60px height.
-    if (h >= 8 && h <= 20) {
-        const topPx = (h - 8) * 60 + m;
-        const line = document.createElement('div');
-        line.id = 'current-time-line';
-        line.className = 'current-time-indicator';
-        line.style.top = `${topPx}px`;
-        container.appendChild(line);
-        
-        // Scroll to current time smoothly when first initialized
-        if (!existing) {
-            container.parentElement.scrollTo({
-                top: Math.max(0, topPx - 100),
-                behavior: 'smooth'
-            });
-        }
+    for (let i = 0; i < 30; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+
+        const dateStr = getLocalDateISO(date);
+        const dayNum = date.getDate();
+        const isToday = dateStr === todayStr;
+
+        html += `
+            <div class="cal-day ${dateStr === selectedDate ? 'selected' : ''} ${isToday ? 'today' : ''}" 
+                 data-date="${dateStr}" 
+                 onclick="selectDate('${dateStr}')">
+                <span class="day-name">${dayNames[date.getDay()]}</span>
+                ${dayNum}
+            </div>
+        `;
     }
+
+    container.innerHTML = html;
 }
 
-function changeAgendaDate(offset) {
-    if (!selectedDate) selectedDate = getLocalDateISO(new Date());
-    const dateObj = new Date(selectedDate + 'T12:00:00'); // Use mid-day to avoid timezone shifting
-    dateObj.setDate(dateObj.getDate() + offset);
-    selectedDate = getLocalDateISO(dateObj);
-    loadBookingsForDate(selectedDate);
-}
+// Select Date (for calendar tab)
+window.selectDate = function (dateStr) {
+    selectedDate = dateStr;
+    renderMiniCalendar();
+    loadBookingsForDate(dateStr);
+};
 
-// Load Bookings for Time Grid (calendar tab)
+// Load Bookings for Specific Date (calendar tab)
 async function loadBookingsForDate(date) {
-    const container = document.getElementById('time-grid-content');
-    const label = document.getElementById('agenda-date-label');
+    const container = document.getElementById('calendar-bookings');
+    const label = document.getElementById('selected-date-label');
 
-    if (!container) return;
-
-    // Reset container (keep lines, remove old blocks)
-    container.querySelectorAll('.time-block').forEach(el => el.remove());
-
-    // Format date for label
+    // Format date
     const [year, month, day] = date.split('-').map(Number);
     const dateObj = new Date(year, month - 1, day);
-    
-    const todayStr = getLocalDateISO(new Date());
-    if (date === todayStr) {
-        label.textContent = "Hoy";
-    } else {
-        label.textContent = dateObj.toLocaleDateString('es-ES', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric'
-        });
-    }
+    const formatted = dateObj.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    label.textContent = formatted;
 
     try {
         const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings?date=${date}`, {
             headers: authHeaders()
         });
-        let bookings = await response.json();
-        
-        // Filter cancelled
-        bookings = bookings.filter(b => b.status !== 'cancelled');
+        const bookings = await response.json();
 
-        bookings.forEach(b => {
-            const timeStr = b.booking_time; // format "HH:MM:SS"
-            if (!timeStr) return;
-            
-            const [h, m] = timeStr.split(':').map(Number);
-            const durationMins = b.service_duration || 60; // default 1h
-            
-            // Grid starts at 8:00 AM. 1 hour = 60px height.
-            const startMinsFrom8AM = (h - 8) * 60 + m;
-            const topPx = startMinsFrom8AM; // 1px = 1min
-            const heightPx = durationMins; // 1px = 1min
-            
-            if (topPx < 0 || topPx > 13 * 60) return; // Outside our grid (8 to 21)
-            
-            const block = document.createElement('div');
-            block.className = `time-block tb-${b.status}`;
-            block.style.top = `${topPx}px`;
-            block.style.height = `${heightPx}px`;
-            
-            block.innerHTML = `
-                <div class="tb-client">${b.client_name}</div>
-                <div class="tb-service">${b.service_title}</div>
-            `;
-            
-            // Open modal on click
-            block.addEventListener('click', () => openAgendaModal(b));
-            container.appendChild(block);
-        });
+        if (bookings.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No tienes citas para este día.</p></div>';
+            return;
+        }
+
+        container.innerHTML = bookings.map(b => renderBookingCard(b, 'calendar')).join('');
+        attachActionListeners();
 
     } catch (error) {
-        console.error('Error loading agenda:', error);
+        container.innerHTML = '<div class="empty-state"><p style="color: red;">Error cargando citas</p></div>';
+        console.error(error);
     }
 }
-
-function openAgendaModal(b) {
-    document.getElementById('agenda-modal').style.display = 'flex';
-    document.getElementById('agenda-modal-content').innerHTML = renderBookingCard(b, 'agenda-modal');
-    attachActionListeners();
-}
-
-window.closeAgendaModal = function() {
-    document.getElementById('agenda-modal').style.display = 'none';
-    loadBookingsForDate(selectedDate);
-    loadPendingBookings();
-    loadTodayBookings();
-};
 
 // =============================================
 // BOOKING CARD RENDERING
@@ -916,4 +847,3 @@ document.getElementById('change-password-form').addEventListener('submit', async
         document.getElementById('new-password').value = '';
     }
 });
-
