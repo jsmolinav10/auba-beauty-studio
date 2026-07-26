@@ -18,6 +18,24 @@ function authHeaders(extra = {}) {
     return headers;
 }
 
+// Wrapper de fetch con autenticación y manejo de token expirado
+async function authFetch(url, options = {}) {
+    // Asegurar que siempre se envíen los headers de auth
+    if (!options.headers) {
+        options.headers = authHeaders();
+    }
+    const response = await fetch(url, options);
+    // Si el token expiró, cerrar sesión automáticamente
+    if (response.status === 401) {
+        localStorage.removeItem('auba_manicurist_session');
+        localStorage.removeItem(MANICURIST_TOKEN_KEY);
+        currentManicurist = null;
+        showLoginScreen();
+        throw new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
+    }
+    return response;
+}
+
 // Estado de las citas
 const STATUS_LABELS = {
     'pending': 'Pendiente',
@@ -303,8 +321,9 @@ function renderBookingCard(booking, context) {
     const statusLabel = STATUS_LABELS[status] || status;
     const time = booking.booking_time.substring(0, 5);
 
-    // Format date
-    const [year, month, day] = booking.booking_date.split('-').map(Number);
+    // Format date - handle both YYYY-MM-DD and full ISO datetime
+    const dateRaw = typeof booking.booking_date === 'string' ? booking.booking_date.substring(0, 10) : new Date(booking.booking_date).toISOString().substring(0, 10);
+    const [year, month, day] = dateRaw.split('-').map(Number);
     const dateObj = new Date(year, month - 1, day);
     const dateFormatted = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 
