@@ -6,6 +6,19 @@
       "includeFiles": "public/**"
     }
   },
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "auba-nails-studio.vercel.app"
+        }
+      ],
+      "destination": "https://auba-studio.vercel.app/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/(.*)", "destination": "/api/index.js" }
