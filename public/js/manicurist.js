@@ -93,14 +93,16 @@ function showDashboard() {
         month: 'long'
     });
 
-    // Default selection for calendar tab is today (local)
-    selectedDate = getLocalDateISO(today);
+    // Initialize agenda state
+    const todayStr = getLocalDateISO(today);
+    agendaCurrentDate = todayStr;
+    miniCalCurrentMonth = { year: today.getFullYear(), month: today.getMonth() };
+    selectedDate = todayStr; // keep old variable in sync
 
-    // Load data
+    // Load all tabs data
     loadPendingBookings();
     loadTodayBookings();
-    renderMiniCalendar();
-    loadBookingsForDate(selectedDate); // Initial load for Agenda tab
+    loadAgendaForDate(todayStr); // new time-grid agenda
     initBookingTab();
 }
 
@@ -231,86 +233,257 @@ async function loadTodayBookings() {
     }
 }
 
-// Render Mini Calendar (30 days)
-function renderMiniCalendar() {
-    const container = document.getElementById('mini-calendar');
-    const today = new Date();
-    const todayStr = getLocalDateISO(today);
+// =============================================
+// AGENDA: Google Calendar Style Time Grid
+// =============================================
 
-    // Week day initials
-    const dayNames = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
-    let html = '';
+const AGENDA_START_HOUR = 9;   // 9 AM
+const AGENDA_END_HOUR   = 19;  // 7 PM (exclusive), shows rows 9–18
+const HOUR_HEIGHT_PX    = 60;  // each hour row is 60px
+let agendaCurrentDate   = null; // the date currently shown in the time grid
+let miniCalCurrentMonth = null; // { year, month } of the mini calendar
+let agendaAllBookings   = [];   // cached bookings for the displayed date
 
-    // Add headers for days starting from today's day of week
-    for (let i = 0; i < 7; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-        html += `<div style="text-align: center; font-size: 11px; color: #999; font-weight: 600; margin-bottom: 8px;">${dayNames[date.getDay()]}</div>`;
-    }
+// Colour palette (rotates by booking index)
+const APPT_COLORS = [
+    { bg: '#FFCDD2', text: '#C62828' },
+    { bg: '#FFE0B2', text: '#E65100' },
+    { bg: '#FFF9C4', text: '#F57F17' },
+    { bg: '#C8E6C9', text: '#2E7D32' },
+    { bg: '#BBDEFB', text: '#1565C0' },
+    { bg: '#E1BEE7', text: '#6A1B9A' },
+    { bg: '#F8BBD0', text: '#AD1457' },
+    { bg: '#B2DFDB', text: '#00695C' },
+];
 
-    for (let i = 0; i < 30; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-
-        const dateStr = getLocalDateISO(date);
-        const dayNum = date.getDate();
-        const isToday = dateStr === todayStr;
-
-        html += `
-            <div class="cal-day ${dateStr === selectedDate ? 'selected' : ''} ${isToday ? 'today' : ''}" 
-                 data-date="${dateStr}" 
-                 onclick="selectDate('${dateStr}')">
-                <span class="day-name">${dayNames[date.getDay()]}</span>
-                ${dayNum}
-            </div>
-        `;
-    }
-
-    container.innerHTML = html;
-}
-
-// Select Date (for calendar tab)
-window.selectDate = function (dateStr) {
-    selectedDate = dateStr;
-    renderMiniCalendar();
-    loadBookingsForDate(dateStr);
+// Navigate agenda by +/-1 day
+window.agendaNavigate = function(delta) {
+    const d = new Date(agendaCurrentDate);
+    d.setDate(d.getDate() + delta);
+    agendaCurrentDate = getLocalDateISO(d);
+    loadAgendaForDate(agendaCurrentDate);
 };
 
-// Load Bookings for Specific Date (calendar tab)
-async function loadBookingsForDate(date) {
-    const container = document.getElementById('calendar-bookings');
-    const label = document.getElementById('selected-date-label');
+// Navigate mini calendar by +/-1 month
+window.miniCalNavigate = function(delta) {
+    miniCalCurrentMonth.month += delta;
+    if (miniCalCurrentMonth.month > 11) { miniCalCurrentMonth.month = 0; miniCalCurrentMonth.year++; }
+    if (miniCalCurrentMonth.month < 0)  { miniCalCurrentMonth.month = 11; miniCalCurrentMonth.year--; }
+    renderMiniMonthCal();
+};
 
-    // Format date
-    const [year, month, day] = date.split('-').map(Number);
-    const dateObj = new Date(year, month - 1, day);
-    const formatted = dateObj.toLocaleDateString('es-ES', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    label.textContent = formatted;
+// Called when user clicks a day in the mini calendar
+window.selectAgendaDate = function(dateStr) {
+    agendaCurrentDate = dateStr;
+    loadAgendaForDate(dateStr);
+    renderMiniMonthCal();
+};
+
+// Master function: load bookings for date and re-render everything
+async function loadAgendaForDate(date) {
+    // Update header label
+    const [y, m, d] = date.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const label = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    document.getElementById('agenda-date-label').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+    // Render empty skeleton immediately
+    renderTimeGridSkeleton();
 
     try {
         const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings?date=${date}`, {
             headers: authHeaders()
         });
-        const bookings = await response.json();
+        agendaAllBookings = await response.json();
+    } catch (e) {
+        agendaAllBookings = [];
+        console.error('Error cargando agenda:', e);
+    }
 
-        if (bookings.length === 0) {
-            container.innerHTML = '<div class="empty-state"><p>No tienes citas para este día.</p></div>';
+    renderTimeGrid(agendaAllBookings);
+    loadNextAppointments();
+    renderMiniMonthCal();
+}
+
+// Draw the time grid rows (skeleton)
+function renderTimeGridSkeleton() {
+    const body = document.getElementById('time-grid-body');
+    let html = '';
+    for (let h = AGENDA_START_HOUR; h < AGENDA_END_HOUR; h++) {
+        const label = h <= 12 ? `${h}:00 AM` : `${h - 12}:00 PM`;
+        html += `<div class="time-grid-row">
+            <span class="time-label">${label}</span>
+            <div class="time-grid-half"></div>
+        </div>`;
+    }
+    body.innerHTML = html;
+}
+
+// Place appointment blocks on the grid
+function renderTimeGrid(bookings) {
+    renderTimeGridSkeleton(); // redraw rows cleanly
+    const body = document.getElementById('time-grid-body');
+
+    if (!bookings || bookings.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'agenda-empty-state';
+        empty.innerHTML = '<p>📭 Sin citas para este día</p>';
+        body.appendChild(empty);
+        drawCurrentTimeLine(body);
+        return;
+    }
+
+    bookings.forEach((b, idx) => {
+        const timeStr = (b.booking_time || '09:00').substring(0, 5); // 'HH:MM'
+        const [hh, mm] = timeStr.split(':').map(Number);
+        const duration = parseInt(b.service_duration) || 60;
+        const color = APPT_COLORS[idx % APPT_COLORS.length];
+
+        // Position in pixels from top of grid
+        const topPx  = (hh - AGENDA_START_HOUR) * HOUR_HEIGHT_PX + (mm / 60) * HOUR_HEIGHT_PX;
+        const heightPx = Math.max((duration / 60) * HOUR_HEIGHT_PX, 36); // min 36px
+
+        // End time string
+        const endMin = hh * 60 + mm + duration;
+        const endH   = Math.floor(endMin / 60);
+        const endM   = endMin % 60;
+        const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+
+        const block = document.createElement('div');
+        block.className = 'appt-block';
+        block.style.top        = `${topPx}px`;
+        block.style.height     = `${heightPx}px`;
+        block.style.background = color.bg;
+        block.style.color      = color.text;
+        block.innerHTML = `
+            <div class="appt-block-time">${timeStr} - ${endStr} · ${duration}m</div>
+            <div class="appt-block-title">${escapeHtml(b.service_title || 'Servicio')} - ${escapeHtml(b.client_name || 'Clienta')}</div>
+            ${heightPx > 50 ? `<div class="appt-block-client">📱 ${escapeHtml(b.client_phone || '')}</div>` : ''}
+        `;
+        body.appendChild(block);
+    });
+
+    drawCurrentTimeLine(body);
+}
+
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// Draw a red line at the current time
+function drawCurrentTimeLine(body) {
+    const now   = new Date();
+    const today = getLocalDateISO(now);
+    if (agendaCurrentDate !== today) return;
+
+    const h = now.getHours();
+    const m = now.getMinutes();
+    if (h < AGENDA_START_HOUR || h >= AGENDA_END_HOUR) return;
+
+    const topPx = (h - AGENDA_START_HOUR) * HOUR_HEIGHT_PX + (m / 60) * HOUR_HEIGHT_PX;
+    const line  = document.createElement('div');
+    line.className = 'current-time-line';
+    line.style.top = `${topPx}px`;
+    body.appendChild(line);
+}
+
+// Render the mini month calendar on the right panel
+function renderMiniMonthCal() {
+    const grid  = document.getElementById('mini-cal-grid');
+    const label = document.getElementById('mini-cal-month-label');
+    if (!grid) return;
+
+    const { year, month } = miniCalCurrentMonth;
+    const todayStr = getLocalDateISO(new Date());
+
+    label.textContent = new Date(year, month, 1)
+        .toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+    const dayNames = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
+    let html = dayNames.map(d => `<div class="mini-cal-day-name">${d}</div>`).join('');
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrev  = new Date(year, month, 0).getDate();
+
+    // Pad with previous month
+    for (let i = firstDay - 1; i >= 0; i--) {
+        html += `<div class="mini-cal-day other-month">${daysInPrev - i}</div>`;
+    }
+
+    // Current month days
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const classes = [
+            'mini-cal-day',
+            dateStr === todayStr ? 'today' : '',
+            dateStr === agendaCurrentDate ? 'selected' : '',
+        ].filter(Boolean).join(' ');
+        html += `<div class="${classes}" onclick="selectAgendaDate('${dateStr}')">${d}</div>`;
+    }
+
+    // Pad remaining
+    const total = firstDay + daysInMonth;
+    const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let i = 1; i <= remainder; i++) {
+        html += `<div class="mini-cal-day other-month">${i}</div>`;
+    }
+
+    grid.innerHTML = html;
+}
+
+// Load upcoming appointments for the right panel
+async function loadNextAppointments() {
+    const container = document.getElementById('next-appts-list');
+    if (!container) return;
+
+    const today = getLocalDateISO(new Date());
+    try {
+        const response = await authFetch(
+            `${API_BASE}/manicurists/${currentManicurist.id}/bookings`,
+            { headers: authHeaders() }
+        );
+        const all = await response.json();
+        const upcoming = Array.isArray(all)
+            ? all.filter(b => {
+                const bd = typeof b.booking_date === 'string'
+                    ? b.booking_date.substring(0, 10)
+                    : new Date(b.booking_date).toISOString().substring(0, 10);
+                return bd >= today && b.status !== 'cancelled';
+            }).slice(0, 5)
+            : [];
+
+        if (upcoming.length === 0) {
+            container.innerHTML = '<div class="agenda-empty-state"><p>Sin citas próximas</p></div>';
             return;
         }
 
-        container.innerHTML = bookings.map(b => renderBookingCard(b, 'calendar')).join('');
-        attachActionListeners();
-
-    } catch (error) {
-        container.innerHTML = '<div class="empty-state"><p style="color: red;">Error cargando citas</p></div>';
-        console.error(error);
+        container.innerHTML = upcoming.map((b, i) => {
+            const color = APPT_COLORS[i % APPT_COLORS.length];
+            const bd = typeof b.booking_date === 'string'
+                ? b.booking_date.substring(0, 10)
+                : new Date(b.booking_date).toISOString().substring(0, 10);
+            const [y, mo, d] = bd.split('-').map(Number);
+            const dateLabel = new Date(y, mo-1, d).toLocaleDateString('es-ES', { day:'numeric', month:'short' });
+            return `
+            <div class="next-appt-item">
+                <div class="next-appt-dot" style="background: ${color.bg}; border-left: 3px solid ${color.text};"></div>
+                <div class="next-appt-info">
+                    <div class="next-appt-title">${escapeHtml(b.service_title||'Servicio')} · ${escapeHtml(b.client_name||'Clienta')}</div>
+                    <div class="next-appt-detail">${dateLabel} · ${(b.booking_time||'').substring(0,5)}</div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        container.innerHTML = '<div class="agenda-empty-state"><p>Error cargando</p></div>';
     }
 }
+
+// Old aliases (kept for safety – unused now but avoid errors)
+function renderMiniCalendar() { renderMiniMonthCal(); }
+window.selectDate = function(dateStr) { selectAgendaDate(dateStr); };
+
+
 
 // =============================================
 // BOOKING CARD RENDERING
