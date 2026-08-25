@@ -15,7 +15,7 @@
           "value": "auba-nails-studio.vercel.app"
         }
       ],
-      "destination": "https://auba-studio.vercel.app/$1",
+      "destination": "https://aubaestudio.com/$1",
       "permanent": true
     }
   ],

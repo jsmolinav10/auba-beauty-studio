@@ -10,4 +10,4 @@ Disallow: /database/
 Disallow: /tests/
 
 # Sitemap
-Sitemap: https://auba.com/sitemap.xml
+Sitemap: https://aubaestudio.com/sitemap.xml
