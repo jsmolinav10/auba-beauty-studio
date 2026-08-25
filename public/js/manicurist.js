@@ -748,7 +748,7 @@ function refreshAllViews() {
     loadPendingBookings();
     loadTodayBookings();
     if (selectedDate) {
-        loadBookingsForDate(selectedDate);
+        loadAgendaForDate(selectedDate);
     }
 }
 
