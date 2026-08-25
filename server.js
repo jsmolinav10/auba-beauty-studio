@@ -14,8 +14,10 @@ const REQUIRED_ENV = ['SUPABASE_DB_URL', 'ADMIN_PHONE', 'ADMIN_PASSWORD', 'JWT_S
 const missing = REQUIRED_ENV.filter(key => !process.env[key]);
 if (missing.length > 0) {
     console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
-    console.error('   Copy .env.production.example to .env and fill in ALL values.');
-    process.exit(1);
+    console.error('   Please configure them in Vercel Project Settings > Environment Variables.');
+    if (!process.env.VERCEL) {
+        process.exit(1);
+    }
 }
 
 const express = require('express');
@@ -94,12 +96,25 @@ app.use(helmet({
 const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
     : [];
-allowedOrigins.push('http://localhost:3000', 'http://192.168.40.12:3000', 'https://auba-studio.vercel.app', 'https://beauty-studio-jsmolinav10-5854s-projects.vercel.app', 'https://beauty-studio-kappa.vercel.app', 'https://auba-nails-studio.vercel.app');
+allowedOrigins.push(
+    'http://localhost:3000',
+    'http://192.168.40.12:3000',
+    'https://aubaestudio.com',
+    'https://www.aubaestudio.com',
+    'https://auba-studio.vercel.app',
+    'https://beauty-studio-jsmolinav10-5854s-projects.vercel.app',
+    'https://beauty-studio-kappa.vercel.app',
+    'https://auba-nails-studio.vercel.app'
+);
 
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin) || (origin && origin.endsWith('.vercel.app'))) {
+        if (
+            allowedOrigins.includes(origin) ||
+            origin.endsWith('.vercel.app') ||
+            origin.includes('aubaestudio.com')
+        ) {
             return callback(null, true);
         }
         return callback(new Error('Not allowed by CORS'));
@@ -138,7 +153,9 @@ async function initDB() {
         console.log('✅ Conectado a Supabase PostgreSQL');
     } catch (error) {
         console.error('❌ Error conectando a PostgreSQL:', error.message);
-        process.exit(1);
+        if (!process.env.VERCEL) {
+            process.exit(1);
+        }
     }
 }
 
