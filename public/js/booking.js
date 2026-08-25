@@ -3,9 +3,9 @@
  * Conecta con el backend Node.js + MySQL
  */
 
-// BUG-12 FIX: Detectar origin dinámicamente
-const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
-const API_BASE = IS_LOCAL ? window.location.origin + '/api' : '/api';
+// FIX: Usar siempre window.location.origin para que /api resuelva al mismo dominio
+// tanto en localhost como en aubaestudio.com sin ambigüedad en rewrites de Vercel.
+const API_BASE = window.location.origin + '/api';
 
 // Datos por defecto (Fallback)
 let MANICURISTS = [
@@ -33,7 +33,7 @@ let bookingData = {
     user: null
 };
 
-// Cargar datos desde la API (si falla, usa los locales)
+// Cargar datos desde la API (si falla, muestra error visible al usuario)
 async function loadData() {
     try {
         const [manicuristsRes, servicesRes] = await Promise.all([
@@ -42,16 +42,39 @@ async function loadData() {
         ]);
 
         if (manicuristsRes.ok && servicesRes.ok) {
-            MANICURISTS = await manicuristsRes.json();
-            SERVICES = await servicesRes.json();
-            console.log('Datos cargados del servidor');
+            const manicuristsData = await manicuristsRes.json();
+            const servicesData = await servicesRes.json();
+            // Solo reemplazar si el servidor devolvió datos válidos
+            if (Array.isArray(manicuristsData) && manicuristsData.length > 0) {
+                MANICURISTS = manicuristsData;
+            }
+            if (Array.isArray(servicesData) && servicesData.length > 0) {
+                SERVICES = servicesData;
+            }
+            console.log('✅ Datos cargados del servidor');
+            return true;
+        } else {
+            // El servidor respondió pero con error HTTP
+            console.error(`Error del servidor: ${manicuristsRes.status} / ${servicesRes.status}`);
+            _showServerWarning('El servidor respondió con un error (' + (manicuristsRes.ok ? servicesRes.status : manicuristsRes.status) + '). Mostrando datos de ejemplo.');
+            return false;
         }
-        return true;
     } catch (error) {
-        console.warn('No se pudo conectar al servidor, usando datos locales:', error);
-        // No alertamos para no bloquear la UI, simplemente usamos los datos por defecto
-        return true;
+        // Sin conexión o servidor caído
+        console.error('No se pudo conectar al servidor:', error);
+        _showServerWarning('No se pudo conectar con el servidor. Verifica tu conexión o inténtalo más tarde.');
+        return false;
     }
+}
+
+function _showServerWarning(msg) {
+    const existing = document.getElementById('server-warning-banner');
+    if (existing) return; // No duplicar
+    const banner = document.createElement('div');
+    banner.id = 'server-warning-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#f59e0b;color:#1c1917;padding:10px 20px;text-align:center;font-size:14px;font-weight:600;';
+    banner.textContent = '⚠️ ' + msg;
+    document.body.prepend(banner);
 }
 
 // Formatear precio

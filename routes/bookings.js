@@ -74,16 +74,14 @@ router.post('/bookings', requireAuth(['user']), async (req, res) => {
         }
 
         // Validar conflicto de horario
+        // FIX: ?::TIME rompía la parametrización en db.js. Usamos EXTRACT(EPOCH) para comparar.
         const [existing] = await pool.execute(
             `SELECT id FROM bookings 
              WHERE manicurist_id = ? 
              AND booking_date = ? 
              AND status != 'cancelled'
-             AND (
-                (booking_time <= ? AND booking_time + INTERVAL '2 hours' > ?::TIME) OR
-                (booking_time < ?::TIME + INTERVAL '2 hours' AND booking_time + INTERVAL '2 hours' >= ?::TIME + INTERVAL '2 hours')
-             )`,
-            [manicurist_id, booking_date, booking_time, booking_time, booking_time, booking_time]
+             AND ABS(EXTRACT(EPOCH FROM (booking_time - ?::TIME)) / 3600) < 2`,
+            [manicurist_id, booking_date, booking_time]
         );
 
         if (existing.length > 0) {
@@ -181,17 +179,15 @@ router.put('/bookings/:id/reschedule', requireAuth(['user']), async (req, res) =
             });
         }
 
+        // FIX: ?::TIME rompía la parametrización en db.js. Usamos EXTRACT(EPOCH) para comparar.
         const [conflicts] = await pool.execute(
             `SELECT id FROM bookings 
              WHERE manicurist_id = ? 
              AND booking_date = ? 
              AND status NOT IN ('cancelled', 'no_show')
              AND id != ?
-             AND (
-                (booking_time <= ? AND booking_time + INTERVAL '2 hours' > ?::TIME) OR
-                (booking_time < ?::TIME + INTERVAL '2 hours' AND booking_time + INTERVAL '2 hours' >= ?::TIME + INTERVAL '2 hours')
-             )`,
-            [booking.manicurist_id, new_date, id, new_time, new_time, new_time, new_time]
+             AND ABS(EXTRACT(EPOCH FROM (booking_time - ?::TIME)) / 3600) < 2`,
+            [booking.manicurist_id, new_date, id, new_time]
         );
 
         if (conflicts.length > 0) {

@@ -3,9 +3,9 @@
  * Conecta con el backend Node.js + MySQL
  */
 
-// BUG-12 FIX: Detectar origin dinámicamente para que funcione en producción
-const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
-const API_BASE = IS_LOCAL ? window.location.origin + '/api' : '/api';
+// FIX: Usar siempre window.location.origin para que /api resuelva al mismo dominio
+// tanto en localhost como en aubaestudio.com sin ambigüedad en rewrites de Vercel.
+const API_BASE = window.location.origin + '/api';
 
 // Password Toggle Function
 function togglePassword(inputId, button) {
