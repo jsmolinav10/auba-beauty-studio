@@ -82,7 +82,7 @@ app.use(helmet({
             imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com"],
             connectSrc: ["'self'", "https://graph.facebook.com", "https://checkout.epayco.co"],
             mediaSrc: ["'self'"],
-            frameSrc: ["https://checkout.epayco.co"],
+            frameSrc: ["https://checkout.epayco.co", "https://maps.google.com", "https://www.google.com"],
             manifestSrc: ["'self'"],
             upgradeInsecureRequests: isProduction ? [] : null
         }
