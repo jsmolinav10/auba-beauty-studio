@@ -204,10 +204,29 @@
 .social-icon {
     color: var(--color-accent);
     font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    transition: color 0.3s ease, transform 0.3s ease;
 }
 
 .social-icon:hover {
     color: var(--color-accent-hover);
+    transform: translateY(-2px);
+}
+
+/* Map Container */
+.map-container {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.map-container iframe {
+    display: block;
+    width: 100%;
+    min-height: 400px;
 }
 
 /* WhatsApp Float */
