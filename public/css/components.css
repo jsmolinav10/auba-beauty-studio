@@ -935,6 +935,15 @@
     }
 }
 
+/* El slide envuelve un <picture> con fuente WebP y respaldo JPEG. El <picture>
+   es inline por defecto, así que se hace block para que el img de dentro ocupe
+   todo el slide. */
+.carousel-slide picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
 .carousel-slide img {
     width: 100%;
     height: 100%;

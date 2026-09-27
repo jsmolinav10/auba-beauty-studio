@@ -245,8 +245,8 @@ router.post('/manicurists', async (req, res) => {
         if (!phone || !/^\d{10}$/.test(phone.replace(/\s/g, ''))) {
             return res.status(400).json({ success: false, error: 'El número de celular debe tener 10 dígitos' });
         }
-        if (!password || password.length < 4) {
-            return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 4 caracteres' });
+        if (!password || password.length < 8) {
+            return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 8 caracteres' });
         }
 
         const [existing] = await pool.execute('SELECT id FROM manicurists WHERE phone = ?', [phone]);
@@ -346,20 +346,52 @@ router.delete('/manicurists/:id', async (req, res) => {
 // RESET DE CONTRASEÑAS GENÉRICAS
 // ============================================
 
+/**
+ * Reset de contraseña.
+ *
+ * Antes devolvía la contraseña en la respuesta HTTP y usaba el literal
+ * 'auba2026' para todas las cuentas, que además estaba publicado en el
+ * repositorio y en una página de pruebas accesible en producción.
+ *
+ * Ahora la contraseña se genera al azar y solo se comunica una vez, en esta
+ * misma respuesta, para que el administrador la transmita a la persona. Nadie más
+ * puede recuperarla después: el siguiente reset genera otra distinta.
+ */
+const TEMP_PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+
+function generateTemporaryPassword(length = 12) {
+    const bytes = require('crypto').randomBytes(length);
+    let password = '';
+    for (let i = 0; i < length; i++) {
+        password += TEMP_PASSWORD_ALPHABET[bytes[i] % TEMP_PASSWORD_ALPHABET.length];
+    }
+    return password;
+}
+
 router.put('/users/:id/reset-password', async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
-        const hashedPassword = await bcrypt.hash('auba2026', 10);
-        
+        const temporaryPassword = generateTemporaryPassword();
+        const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+        const [existing] = await pool.execute('SELECT id FROM users WHERE id = ?', [id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ success: false, error: 'Clienta no encontrada' });
+        }
+
         await pool.execute(
             'UPDATE users SET password = ?, password_reset_token = NULL, token_expiry = NULL WHERE id = ?',
             [hashedPassword, id]
         );
-        
-        res.json({ success: true, message: 'Contraseña de clienta restablecida a: auba2026' });
+
+        res.json({
+            success: true,
+            message: 'Contraseña restablecida. Comunícasela a la clienta: no se puede volver a recuperar.',
+            temporaryPassword
+        });
     } catch (error) {
-        console.error('Error reset user password:', error);
+        console.error('Error reset user password:', error.message);
         res.status(500).json({ success: false, error: 'Error del servidor' });
     }
 });
@@ -368,16 +400,26 @@ router.put('/manicurists/:id/reset-password', async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
-        const hashedPassword = await bcrypt.hash('auba2026', 10);
-        
+        const temporaryPassword = generateTemporaryPassword();
+        const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+        const [existing] = await pool.execute('SELECT id FROM manicurists WHERE id = ?', [id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ success: false, error: 'Manicurista no encontrada' });
+        }
+
         await pool.execute(
             'UPDATE manicurists SET password = ? WHERE id = ?',
             [hashedPassword, id]
         );
-        
-        res.json({ success: true, message: 'Contraseña de manicurista restablecida a: auba2026' });
+
+        res.json({
+            success: true,
+            message: 'Contraseña restablecida. Comunícasela a la manicurista: no se puede volver a recuperar.',
+            temporaryPassword
+        });
     } catch (error) {
-        console.error('Error reset manicurist password:', error);
+        console.error('Error reset manicurist password:', error.message);
         res.status(500).json({ success: false, error: 'Error del servidor' });
     }
 });

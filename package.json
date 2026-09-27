@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "node server.js",
     "generate-icons": "node generate-pwa-icons.js",
-    "test": "node test-auth.js"
+    "optimize-images": "node optimize-images.js",
+    "test": "node tests/comprehensive_validation.js"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -33,9 +34,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
-    "mysql2": "^3.16.1",
     "node-cron": "^4.2.1",
-    "nodemailer": "^7.0.13",
     "pg": "^8.22.0",
     "sharp": "^0.34.5"
   }

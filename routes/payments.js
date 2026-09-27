@@ -92,12 +92,27 @@ router.put('/bookings/:id/payment', requireAuth(['user']), (req, res, next) => {
 // INFO DE PAGO
 // ============================================
 
-router.get('/bookings/:id/payment-info', async (req, res) => {
+router.get('/bookings/:id/payment-info', requireAuth(['user', 'admin']), async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
+
+        const [bookingRows] = await pool.execute(
+            'SELECT b.user_id FROM bookings b WHERE b.id = ?',
+            [id]
+        );
+
+        if (bookingRows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Reserva no encontrada' });
+        }
+
+        const isOwner = bookingRows[0].user_id === req.auth.userId;
+        if (!isOwner && req.auth.role !== 'admin') {
+            return res.status(403).json({ success: false, error: 'No tienes permiso para ver esta reserva.' });
+        }
+
         const [rows] = await pool.execute(
-            `SELECT b.payment_type, b.payment_amount, b.payment_status, 
+            `SELECT b.payment_type, b.payment_amount, b.payment_status,
                     b.payment_proof, b.final_payment_amount, b.final_payment_method,
                     s.price as service_price, s.title as service_title
              FROM bookings b
@@ -123,7 +138,7 @@ router.get('/bookings/:id/payment-info', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error obteniendo info de pago:', error);
+        console.error('Error obteniendo info de pago:', error.message);
         res.status(500).json({ success: false, error: 'Error del servidor' });
     }
 });
@@ -139,7 +154,27 @@ router.get('/config', (req, res) => {
     });
 });
 
+/**
+ * Webhook de ePayco.
+ *
+ * ePayco no está integrado en el flujo real (la reserva se cobra por Nequi con
+ * verificación manual), pero el endpoint quedaba expuesto: sin validar la firma
+ * del servidor, cualquiera podía enviar x_cod_response=1 y marcar una reserva
+ * como pagada. Pasa a quedar cerrado por defecto y solo se habilita si se define
+ * EPAYCO_WEBHOOK_SECRET, que es el valor compartido que ePayco debe enviar.
+ */
 router.post('/confirm', async (req, res) => {
+    const secret = process.env.EPAYCO_WEBHOOK_SECRET;
+    if (!secret) {
+        return res.status(503).json({
+            success: false,
+            error: 'Confirmación de pago deshabilitada. El cobro se realiza por Nequi.'
+        });
+    }
+    if (req.get('x-epayco-secret') !== secret) {
+        return res.status(401).json({ success: false, error: 'Firma de notificación inválida' });
+    }
+
     try {
         const pool = req.app.locals.pool;
         const { x_ref_payco, x_id_invoice, x_amount, x_cod_response } = req.body;
@@ -155,31 +190,38 @@ router.post('/confirm', async (req, res) => {
             const bookingId = x_id_invoice?.replace('AUBA-', '');
             if (bookingId && !isNaN(bookingId)) {
                 await pool.execute(
-                    'UPDATE bookings SET payment_status = ?, payment_ref = ? WHERE id = ?',
-                    ['paid', x_ref_payco, bookingId]
+                    'UPDATE bookings SET payment_status = ? WHERE id = ?',
+                    ['paid', bookingId]
                 );
             }
         }
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Error en webhook de pagos:', error);
+        console.error('Error en webhook de pagos:', error.message);
         res.status(500).json({ success: false, error: 'Error procesando confirmación' });
     }
 });
 
-router.get('/verify/:refPayco', async (req, res) => {
+// Verificación de transacción. Requiere sesión para no exponer el estado de pago
+// de reservas ajenas por URL adivinable.
+router.get('/verify/:refPayco', requireAuth(['user', 'admin']), async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { refPayco } = req.params;
 
         const [bookings] = await pool.execute(
-            'SELECT id, payment_status, payment_ref FROM bookings WHERE payment_ref = ?',
+            'SELECT id, user_id, payment_status FROM bookings WHERE nequi_reference = ?',
             [refPayco]
         );
 
         if (bookings.length === 0) {
             return res.status(404).json({ success: false, error: 'Transacción no encontrada' });
+        }
+
+        const isOwner = bookings[0].user_id === req.auth.userId;
+        if (!isOwner && req.auth.role !== 'admin') {
+            return res.status(403).json({ success: false, error: 'No tienes permiso para ver esta transacción.' });
         }
 
         res.json({
@@ -188,7 +230,7 @@ router.get('/verify/:refPayco', async (req, res) => {
             bookingId: bookings[0].id
         });
     } catch (error) {
-        console.error('Error verificando pago:', error);
+        console.error('Error verificando pago:', error.message);
         res.status(500).json({ success: false, error: 'Error verificando pago' });
     }
 });

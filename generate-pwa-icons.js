@@ -7,16 +7,23 @@ const fs = require('fs');
 const path = require('path');
 
 const SIZES = [72, 128, 192, 384, 512];
-const SOURCE = path.join(__dirname, 'assets', 'Logo Auba.png');
-const OUTPUT_DIR = path.join(__dirname, 'assets', 'icons');
+// Source en el web root. Antes apuntaba a assets/ en la raíz del proyecto, que
+// es un directorio de trabajo sin servir: los iconos que realmente se publican
+// viven en public/assets/icons y el script no los regeneraba.
+const SOURCE = path.join(__dirname, 'public', 'assets', 'Logo Auba.png');
+const OUTPUT_DIR = path.join(__dirname, 'public', 'assets', 'icons');
 
 async function generateIcons() {
+    if (!fs.existsSync(SOURCE)) {
+        throw new Error(`No se encuentra el logo de origen en: ${SOURCE}`);
+    }
+
     // Crear directorio si no existe
     if (!fs.existsSync(OUTPUT_DIR)) {
         fs.mkdirSync(OUTPUT_DIR, { recursive: true });
     }
 
-    console.log('🎨 Generando iconos PWA desde Logo Auba.png...\n');
+    console.log('Generando iconos PWA desde public/assets/Logo Auba.png...\n');
 
     for (const size of SIZES) {
         const outputFile = path.join(OUTPUT_DIR, `icon-${size}x${size}.png`);
@@ -29,13 +36,13 @@ async function generateIcons() {
             .png({ quality: 95 })
             .toFile(outputFile);
 
-        console.log(`  ✅ icon-${size}x${size}.png`);
+        console.log(`  OK icon-${size}x${size}.png`);
     }
 
-    console.log(`\n✨ ${SIZES.length} iconos generados en assets/icons/`);
+    console.log(`\n${SIZES.length} iconos generados en public/assets/icons/`);
 }
 
 generateIcons().catch(err => {
-    console.error('Error generando iconos:', err);
+    console.error('Error generando iconos:', err.message);
     process.exit(1);
 });

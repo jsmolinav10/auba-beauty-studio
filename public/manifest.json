@@ -1,7 +1,7 @@
 {
     "name": "AUBA Beauty Studio",
     "short_name": "AUBA",
-    "description": "Estudio de uñas y estética. Reserva tu cita online.",
+    "description": "Estudio de uñas y estética en Bogotá. Reserva tu cita online.",
     "start_url": "/index.html",
     "display": "standalone",
     "background_color": "#FFFFFF",

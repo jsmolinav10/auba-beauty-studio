@@ -43,11 +43,25 @@ const db = require('./db');
 // CLOUDINARY CONFIG
 // ============================================
 
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'di3azqbni',
-    api_key: process.env.CLOUDINARY_API_KEY || '968518722423617',
-    api_secret: process.env.CLOUDINARY_API_SECRET || 'R3TOv5iRK5TS-U0gG1pAziju1Y4'
-});
+// Las credenciales de Cloudinary solo se leen del entorno. Estaban hardcodeadas
+// como valor por defecto, lo que dejaba la clave y el secreto de la cuenta
+// expuestos en el repositorio para cualquiera que lo clonara. Si faltan, la
+// subida de comprobantes se desactiva en vez de usar credenciales embebidas.
+const cloudinaryConfigured = Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET
+);
+
+if (cloudinaryConfigured) {
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+} else {
+    console.warn('[AVISO] Faltan CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET: la subida de comprobantes quedara deshabilitada.');
+}
 
 const cloudinaryStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
@@ -59,7 +73,7 @@ const cloudinaryStorage = new CloudinaryStorage({
 });
 const uploadProof = multer({
     storage: cloudinaryStorage,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB max
+    limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 10 } // 5MB max
 });
 
 // ============================================
@@ -93,28 +107,30 @@ app.use(helmet({
 }));
 
 // CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
-    : [];
-allowedOrigins.push(
+// La API se consume desde el mismo origen (el front vive en el mismo dominio),
+// así que la lista blanca es explícita. Antes había dos atajos que abrían la API
+// a cualquier tenant de Vercel (origin.endsWith('.vercel.app')) y a cualquier
+// dominio que contuviera la cadena "aubaestudio.com" (origin.includes, que
+// acepta evil-aubaestudio.com.atacante.tld). Verificado en producción: ambos
+// devolvían Access-Control-Allow-Origin reflectido al origen atacante.
+const allowedOrigins = new Set(
+    (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+        .map((o) => o.trim())
+        .filter(Boolean)
+);
+[
     'http://localhost:3000',
     'http://192.168.40.12:3000',
     'https://aubaestudio.com',
-    'https://www.aubaestudio.com',
-    'https://auba-studio.vercel.app',
-    'https://beauty-studio-jsmolinav10-5854s-projects.vercel.app',
-    'https://beauty-studio-kappa.vercel.app',
-    'https://auba-nails-studio.vercel.app'
-);
+    'https://www.aubaestudio.com'
+].forEach((o) => allowedOrigins.add(o));
 
 app.use(cors({
     origin: function (origin, callback) {
+        // Sin Origin no es una petición desde un navegador (curl, health checks,
+        // webhooks de ePayco), así que no hay filtrado que aplicar.
         if (!origin) return callback(null, true);
-        if (
-            allowedOrigins.includes(origin) ||
-            origin.endsWith('.vercel.app') ||
-            origin.includes('aubaestudio.com')
-        ) {
+        if (allowedOrigins.has(origin)) {
             return callback(null, true);
         }
         return callback(new Error('Not allowed by CORS'));
@@ -184,12 +200,38 @@ app.get('/api/health', async (req, res) => {
             database: 'connected'
         });
     } catch (error) {
+        // El detalle del error solo va al log del servidor. Antes se devolvía
+        // error.message al público, lo que llegó a exponer el host de la base
+        // de datos y el identificador del proyecto.
+        console.error('[health] Base de datos inaccesible:', error.message);
         res.status(503).json({
             status: 'error',
             timestamp: new Date().toISOString(),
-            database: 'disconnected',
-            error: error.message
+            database: 'disconnected'
         });
+    }
+});
+
+// ============================================
+// KEEPALIVE DE LA BASE DE DATOS
+// ============================================
+
+/**
+ * Supabase pausa automáticamente los proyectos del plan Free tras una semana sin
+ * actividad, y al pausarse el host de la base de datos deja de resolver: todo el
+ * backend responde 500 y el negocio se queda sin poder recibir reservas.
+ *
+ * Esta ruta ejecuta una consulta real contra la base de datos, que es lo que
+ * Supabase cuenta como actividad. Configura en vercel.json un cron que la llame
+ * (ver api/keepalive.js) para mantener el proyecto activo.
+ */
+app.get('/api/keepalive', async (req, res) => {
+    try {
+        await app.locals.pool.execute('SELECT 1');
+        res.json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
+    } catch (error) {
+        console.error('[keepalive] Base de datos inaccesible:', error.message);
+        res.status(503).json({ status: 'error', database: 'disconnected' });
     }
 });
 
@@ -203,6 +245,30 @@ app.use((req, res) => {
     } else {
         res.status(404).json({ success: false, error: 'Recurso no encontrado' });
     }
+});
+
+// ============================================
+// MANEJO GLOBAL DE ERRORES
+// ============================================
+
+// Debe ir después de todas las rutas. Sin él, Express 5 devuelve su página de
+// error por defecto, que puede incluir detalles internos del stack.
+app.use((err, req, res, next) => {
+    if (res.headersSent) return next(err);
+
+    if (err.message === 'Not allowed by CORS') {
+        return res.status(403).json({ success: false, error: 'Origen no permitido' });
+    }
+
+    console.error(`[error] ${req.method} ${req.originalUrl}:`, err.message);
+    if (err.stack && process.env.NODE_ENV !== 'production') {
+        console.error(err.stack);
+    }
+
+    res.status(err.status || 500).json({
+        success: false,
+        error: 'Error del servidor'
+    });
 });
 
 // ============================================

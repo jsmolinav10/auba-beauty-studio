@@ -10,7 +10,7 @@ const WhatsAppService = {
     config: {
         token: process.env.WHATSAPP_TOKEN || '',
         phoneId: process.env.WHATSAPP_PHONE_ID || '',
-        businessPhone: process.env.WHATSAPP_BUSINESS_PHONE || '573001234567', // Número de AUBA
+        businessPhone: process.env.WHATSAPP_BUSINESS_PHONE || '573134672623',
         apiVersion: 'v18.0'
     },
 
@@ -139,9 +139,9 @@ Tu reserva ha sido confirmada:
 💅 *Servicio:* ${booking.serviceName}
 👩‍💼 *Especialista:* ${booking.manicuristName}
 
-📍 Dirección: Calle Principal 123, Ciudad
+📍 Dirección: Carrera 93a # 131b - 82, Villa Elisa
 
-💳 Recuerda que tu depósito será descontado del valor total.
+💳 Recuerda que tu abono de $20.000 será descontado del valor total.
 
 ¡Te esperamos! 💖
 
@@ -164,7 +164,7 @@ Te recordamos que tienes una cita *mañana*:
 💅 *Servicio:* ${booking.serviceName}
 👩‍💼 *Especialista:* ${booking.manicuristName}
 
-📍 Dirección: Calle Principal 123, Ciudad
+📍 Dirección: Carrera 93a # 131b - 82, Villa Elisa
 
 ¡Te esperamos! 💅✨
 

@@ -6,16 +6,20 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const { requireAuth } = require('./middleware');
+const { requireAuth, requireSelfOrAdmin } = require('./middleware');
 
 // Proteger todas las rutas de manicuristas
 router.use(requireAuth(['manicurist', 'admin']));
+
+// Cada ruta opera sobre la manicurista indicada en la URL. Sin requireSelfOrAdmin
+// una manicurista autenticada podía cambiar el :id y operar sobre la agenda, los
+// datos personales y las credenciales de cualquier otra.
 
 // ============================================
 // AGENDA DE CITAS
 // ============================================
 
-router.get('/:id/bookings', async (req, res) => {
+router.get('/:id/bookings', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
@@ -70,7 +74,7 @@ router.get('/:id/bookings', async (req, res) => {
 // ACTUALIZAR ESTADO DE CITA
 // ============================================
 
-router.put('/:manicuristId/bookings/:bookingId/status', async (req, res) => {
+router.put('/:manicuristId/bookings/:bookingId/status', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { manicuristId, bookingId } = req.params;
@@ -107,7 +111,7 @@ router.put('/:manicuristId/bookings/:bookingId/status', async (req, res) => {
 // VERIFICAR PAGO
 // ============================================
 
-router.put('/:manicuristId/bookings/:bookingId/verify-payment', async (req, res) => {
+router.put('/:manicuristId/bookings/:bookingId/verify-payment', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { manicuristId, bookingId } = req.params;
@@ -142,7 +146,7 @@ router.put('/:manicuristId/bookings/:bookingId/verify-payment', async (req, res)
 // COMPLETAR SERVICIO
 // ============================================
 
-router.put('/:manicuristId/bookings/:bookingId/complete-service', async (req, res) => {
+router.put('/:manicuristId/bookings/:bookingId/complete-service', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { manicuristId, bookingId } = req.params;
@@ -182,7 +186,7 @@ router.put('/:manicuristId/bookings/:bookingId/complete-service', async (req, re
 // BUSCAR CLIENTAS
 // ============================================
 
-router.get('/:id/search-clients', async (req, res) => {
+router.get('/:id/search-clients', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { q } = req.query;
@@ -209,7 +213,7 @@ router.get('/:id/search-clients', async (req, res) => {
 // HORARIOS DISPONIBLES
 // ============================================
 
-router.get('/:id/available-times', async (req, res) => {
+router.get('/:id/available-times', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
@@ -252,7 +256,7 @@ router.get('/:id/available-times', async (req, res) => {
 // CREAR RESERVA PARA CLIENTA
 // ============================================
 
-router.post('/:id/bookings', async (req, res) => {
+router.post('/:id/bookings', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
@@ -307,26 +311,39 @@ router.post('/:id/bookings', async (req, res) => {
 // CAMBIAR CONTRASEÑA
 // ============================================
 
-router.put('/:id/change-password', async (req, res) => {
+router.put('/:id/change-password', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
-        const { newPassword } = req.body;
+        const { currentPassword, newPassword } = req.body;
 
-        if (!newPassword || newPassword.length < 4) {
-            return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 4 caracteres' });
+        if (!newPassword || newPassword.length < 8) {
+            return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 8 caracteres' });
+        }
+        if (!currentPassword) {
+            return res.status(400).json({ success: false, error: 'Debes confirmar tu contraseña actual' });
+        }
+
+        const [rows] = await pool.execute('SELECT password FROM manicurists WHERE id = ?', [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Manicurista no encontrada' });
+        }
+
+        const matches = await bcrypt.compare(currentPassword, rows[0].password);
+        if (!matches) {
+            return res.status(401).json({ success: false, error: 'La contraseña actual no es correcta' });
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
+
         await pool.execute(
             'UPDATE manicurists SET password = ? WHERE id = ?',
             [hashedPassword, id]
         );
-        
+
         res.json({ success: true, message: 'Contraseña actualizada correctamente' });
     } catch (error) {
-        console.error('Error cambiando contraseña de manicurista:', error);
+        console.error('Error cambiando contraseña de manicurista:', error.message);
         res.status(500).json({ success: false, error: 'Error del servidor' });
     }
 });

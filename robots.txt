@@ -1,10 +1,19 @@
 # AUBA Beauty Studio - robots.txt
 
+# Nota: esto guía a los buscadores, pero NO protege nada. La seguridad de estas
+# rutas depende de la autenticación del lado servidor, no de este archivo.
+
 User-agent: *
 Allow: /
+
+# Páginas privadas o de uso interno
 Disallow: /admin.html
 Disallow: /manicurist.html
-Disallow: /debug.html
+Disallow: /mis-citas.html
+Disallow: /reset-password.html
+Disallow: /offline.html
+
+# Back-end y datos
 Disallow: /api/
 Disallow: /database/
 Disallow: /tests/

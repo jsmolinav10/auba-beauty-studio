@@ -63,7 +63,34 @@ router.get('/availability/:manicuristId/:date', async (req, res) => {
 router.post('/bookings', requireAuth(['user']), async (req, res) => {
     try {
         const pool = req.app.locals.pool;
-        const { user_id, manicurist_id, service_id, booking_date, booking_time } = req.body;
+        const { manicurist_id, service_id, booking_date, booking_time } = req.body;
+
+        // La reserva siempre es del usuario del token. Aceptar user_id del body
+        // permitía a cualquier cliente crear citas en nombre de otra persona.
+        const user_id = req.auth.userId;
+
+        if (!manicurist_id || !service_id || !booking_date || !booking_time) {
+            return res.status(400).json({ success: false, error: 'Faltan datos para completar la reserva' });
+        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(booking_date)) {
+            return res.status(400).json({ success: false, error: 'Formato de fecha inválido' });
+        }
+        if (!/^\d{2}:\d{2}(:\d{2})?$/.test(booking_time)) {
+            return res.status(400).json({ success: false, error: 'Formato de hora inválido' });
+        }
+
+        const [manicurists] = await pool.execute(
+            'SELECT id FROM manicurists WHERE id = ? AND available = TRUE',
+            [manicurist_id]
+        );
+        if (manicurists.length === 0) {
+            return res.status(400).json({ success: false, error: 'La especialista seleccionada no está disponible' });
+        }
+
+        const [services] = await pool.execute('SELECT id FROM services WHERE id = ?', [service_id]);
+        if (services.length === 0) {
+            return res.status(400).json({ success: false, error: 'El servicio seleccionado no existe' });
+        }
 
         // Validar fecha no pasada
         const today = new Date();
@@ -76,9 +103,9 @@ router.post('/bookings', requireAuth(['user']), async (req, res) => {
         // Validar conflicto de horario
         // FIX: ?::TIME rompía la parametrización en db.js. Usamos EXTRACT(EPOCH) para comparar.
         const [existing] = await pool.execute(
-            `SELECT id FROM bookings 
-             WHERE manicurist_id = ? 
-             AND booking_date = ? 
+            `SELECT id FROM bookings
+             WHERE manicurist_id = ?
+             AND booking_date = ?
              AND status != 'cancelled'
              AND ABS(EXTRACT(EPOCH FROM (booking_time - ?::TIME)) / 3600) < 2`,
             [manicurist_id, booking_date, booking_time]
@@ -100,7 +127,7 @@ router.post('/bookings', requireAuth(['user']), async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error creando reserva:', error);
+        console.error('Error creando reserva:', error.message);
         res.status(500).json({ success: false, error: 'Error del servidor' });
     }
 });

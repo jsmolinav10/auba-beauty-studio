@@ -1,5 +1,10 @@
 const { Pool } = require('pg');
 
+// db.js se puede cargar de forma independiente (por ejemplo desde la función
+// programada api/keepalive.js), donde server.js no ha pasado por dotenv. Cargar
+// aquí evita que el Pool se construya con una URL de conexión vacía.
+require('dotenv').config();
+
 const pgPool = new Pool({
     connectionString: process.env.SUPABASE_DB_URL,
     ssl: { rejectUnauthorized: false }
@@ -60,8 +65,11 @@ const db = {
             
             return [rows, result.fields];
         } catch (err) {
+            // No se registran los parámetros: las consultas de este proyecto
+            // llevan teléfonos y correos de clientas, y los logs de Vercel son
+            // de acceso amplio. El SQL sí es útil para diagnosticar.
             console.error('Database Error in query:', finalSql);
-            console.error('Params:', params);
+            console.error('Database Error:', err.message);
             throw err;
         }
     },

@@ -325,7 +325,11 @@ const AuthModal = {
             name: document.getElementById('register-name').value,
             phone: document.getElementById('register-phone').value,
             email: document.getElementById('register-email').value,
-            password: document.getElementById('register-password').value
+            password: document.getElementById('register-password').value,
+            // La casilla es obligatoria en el HTML, pero el valor hay que enviarlo
+            // explícitamente: sin esto el consentimiento de la Ley 1581 no queda
+            // registrado en la base de datos.
+            dataConsent: document.getElementById('register-consent').checked
         };
 
         // Mostrar loading

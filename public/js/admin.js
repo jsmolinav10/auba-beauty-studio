@@ -463,7 +463,7 @@ const AdminApp = {
                         <button class="btn-icon" onclick="AdminApp.toggleManicuristAvailability(${m.id}, ${!m.available})" title="Disponibilidad">
                             ${m.available ? '🚫' : '✓'}
                         </button>
-                        <button class="btn-icon" onclick="AdminApp.resetManicuristPassword(${m.id})" title="Resetear Contraseña a auba2026">🔄</button>
+                        <button class="btn-icon" onclick="AdminApp.resetManicuristPassword(${m.id})" title="Generar contraseña temporal">🔄</button>
                         <button class="btn-icon" onclick="AdminApp.deleteManicurist(${m.id})" title="Eliminar">🗑️</button>
                     </div>
                 </div>
@@ -590,14 +590,14 @@ const AdminApp = {
     },
 
     async resetManicuristPassword(id) {
-        if (!confirm('¿Estás seguro de resetear la contraseña de esta manicurista a "auba2026"?')) return;
+        if (!confirm('Se generará una contraseña temporal nueva para esta manicurista. ¿Continuar?')) return;
 
         try {
             const response = await this.authFetch(`${this.API_BASE}/admin/manicurists/${id}/reset-password`, { method: 'PUT' });
             const result = await response.json();
 
             if (result.success) {
-                alert('Contraseña restablecida a: auba2026');
+                this.showTemporaryPassword(result.temporaryPassword);
             } else {
                 alert('Error: ' + (result.error || 'No se pudo restablecer la contraseña'));
             }
@@ -605,6 +605,18 @@ const AdminApp = {
             console.error('Error resetting manicurist password:', error);
             alert('Error de conexión');
         }
+    },
+
+    showTemporaryPassword(password) {
+        if (!password) {
+            alert('Contraseña restablecida.');
+            return;
+        }
+        alert(
+            `Contraseña temporal:\n\n${password}\n\n` +
+            'Cópiala y comunícasela ahora. No se puede recuperar más adelante: ' +
+            'el siguiente reset genera una distinta.'
+        );
     },
 
     // ============================================
@@ -626,7 +638,7 @@ const AdminApp = {
                     <td>${this.formatDate(u.created_at)}</td>
                     <td>${u.booking_count || 0}</td>
                     <td>
-                        <button class="btn-icon" onclick="AdminApp.resetUserPassword(${u.id})" title="Resetear Contraseña a auba2026">🔄</button>
+                        <button class="btn-icon" onclick="AdminApp.resetUserPassword(${u.id})" title="Generar contraseña temporal">🔄</button>
                     </td>
                 </tr>
             `).join('');
@@ -644,14 +656,14 @@ const AdminApp = {
     },
 
     async resetUserPassword(id) {
-        if (!confirm('¿Estás seguro de resetear la contraseña de este cliente a "auba2026"?')) return;
+        if (!confirm('Se generará una contraseña temporal nueva para esta clienta. ¿Continuar?')) return;
 
         try {
             const response = await this.authFetch(`${this.API_BASE}/admin/users/${id}/reset-password`, { method: 'PUT' });
             const result = await response.json();
 
             if (result.success) {
-                alert('Contraseña restablecida a: auba2026');
+                this.showTemporaryPassword(result.temporaryPassword);
             } else {
                 alert('Error: ' + (result.error || 'No se pudo restablecer la contraseña'));
             }

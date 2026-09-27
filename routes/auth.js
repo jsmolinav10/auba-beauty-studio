@@ -31,7 +31,7 @@ async function initAdminPassword() {
 
 router.post('/register', async (req, res) => {
     try {
-        const { name, phone, email, password } = req.body;
+        const { name, phone, email, password, dataConsent } = req.body;
 
         if (!name || name.trim().length < 3) {
             return res.status(400).json({ success: false, error: 'El nombre debe tener al menos 3 caracteres' });
@@ -45,6 +45,14 @@ router.post('/register', async (req, res) => {
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return res.status(400).json({ success: false, error: 'Debes proporcionar un email válido' });
         }
+        // Sin autorización de tratamiento de datos no se puede crear la cuenta
+        // (Ley 1581 de 2012).
+        if (dataConsent !== true) {
+            return res.status(400).json({
+                success: false,
+                error: 'Debes autorizar el tratamiento de tus datos personales para crear la cuenta.'
+            });
+        }
 
         const pool = req.app.locals.pool;
         const [existing] = await pool.execute('SELECT id FROM users WHERE phone = ?', [phone]);
@@ -56,7 +64,7 @@ router.post('/register', async (req, res) => {
         const normalizedEmail = email ? email.trim().toLowerCase() : null;
 
         const [result] = await pool.execute(
-            'INSERT INTO users (name, phone, email, password) VALUES (?, ?, ?, ?)',
+            'INSERT INTO users (name, phone, email, password, data_consent, consent_date) VALUES (?, ?, ?, ?, TRUE, NOW())',
             [name.trim(), phone.replace(/\s/g, ''), normalizedEmail, hashedPassword]
         );
 
@@ -204,14 +212,29 @@ router.post('/forgot-password', async (req, res) => {
 
 router.put('/change-password', requireAuth(['user']), async (req, res) => {
     try {
-        const { newPassword } = req.body;
-        const userId = req.user.id; // From requireAuth middleware
+        const { currentPassword, newPassword } = req.body;
+        // requireAuth expone req.auth, no req.user. Usar req.user hacía que esta
+        // ruta fallara siempre con 500 y el cambio de contraseña era imposible.
+        const userId = req.auth.userId;
 
         if (!newPassword || newPassword.length < 6) {
             return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 6 caracteres' });
         }
+        if (!currentPassword) {
+            return res.status(400).json({ success: false, error: 'Debes confirmar tu contraseña actual' });
+        }
 
         const pool = req.app.locals.pool;
+        const [users] = await pool.execute('SELECT password FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+        }
+
+        const matches = await bcrypt.compare(currentPassword, users[0].password);
+        if (!matches) {
+            return res.status(401).json({ success: false, error: 'La contraseña actual no es correcta' });
+        }
+
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         await pool.execute(
@@ -221,7 +244,7 @@ router.put('/change-password', requireAuth(['user']), async (req, res) => {
 
         res.json({ success: true, message: 'Contraseña actualizada correctamente' });
     } catch (error) {
-        console.error('Error in change-password:', error);
+        console.error('Error in change-password:', error.message);
         res.status(500).json({ success: false, error: 'Error al actualizar la contraseña' });
     }
 });

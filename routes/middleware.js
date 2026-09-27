@@ -31,4 +31,29 @@ function requireAuth(allowedRoles = []) {
     };
 }
 
-module.exports = { generateToken, requireAuth };
+/**
+ * Exige que el recurso solicitado pertenezca al usuario autenticado.
+ *
+ * requireAuth solo comprueba el ROL, así que sin esta comprobación una manicurista
+ * autenticada podía leer y modificar la agenda, los teléfonos y los comprobantes
+ * de pago de cualquier otra manicurista simplemente cambiando el :id de la URL.
+ * Sólo para rutas cuyo parámetro de recurso es la manicurista (:id o :manicuristId).
+ */
+function requireSelfOrAdmin(req, res, next) {
+    if (req.auth.role === 'admin') return next();
+
+    const resourceId = req.params.id ?? req.params.manicuristId;
+    if (resourceId === undefined) {
+        return res.status(400).json({ success: false, error: 'Recurso no especificado' });
+    }
+
+    if (Number(resourceId) !== Number(req.auth.userId)) {
+        return res.status(403).json({
+            success: false,
+            error: 'No tienes permiso para acceder a los recursos de otra manicurista.'
+        });
+    }
+    return next();
+}
+
+module.exports = { generateToken, requireAuth, requireSelfOrAdmin };

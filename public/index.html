@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AUBA SAS | Estética & Elegancia</title>
+    <title>AUBA Beauty Studio | Manicure y Pedicure en Bogotá</title>
     <meta name="description"
-        content="Estudio de uñas y estética con un enfoque minimalista y personalizado. Reserva tu cita online." />
+        content="AUBA Beauty Studio en Villa Elisa, Bogotá. Manicure, pedicure, uñas acrílicas y diseño de cejas. Reserva tu cita online con abono de $20.000 por Nequi." />
+    <link rel="canonical" href="https://aubaestudio.com/" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/Logo Auba.png" />
@@ -21,18 +22,72 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_CO" />
     <meta property="og:url" content="https://aubaestudio.com/" />
     <meta property="og:title" content="AUBA Beauty Studio | Estética & Elegancia" />
     <meta property="og:description"
         content="Estudio de uñas y estética con un enfoque minimalista y personalizado. Reserva tu cita online." />
-    <meta property="og:image" content="https://aubaestudio.com/assets/Logo Auba.png" />
+    <meta property="og:image" content="https://aubaestudio.com/assets/galeria/manicura-gel-diseno-elegante.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://aubaestudio.com/" />
-    <meta property="twitter:title" content="AUBA Beauty Studio | Estética & Elegancia" />
-    <meta property="twitter:description"
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://aubaestudio.com/" />
+    <meta name="twitter:title" content="AUBA Beauty Studio | Estética & Elegancia" />
+    <meta name="twitter:description"
         content="Estudio de uñas y estética con un enfoque minimalista y personalizado." />
+    <meta name="twitter:image"
+        content="https://aubaestudio.com/assets/galeria/manicura-gel-diseno-elegante.jpg" />
+
+    <!-- Datos estructurados: sin esto Google no muestra el panel de negocio local -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "BeautySalon",
+            "name": "AUBA Beauty Studio",
+            "legalName": "AUBA SAS",
+            "description": "Estudio de uñas y estética con enfoque minimalista y personalizado en Bogotá.",
+            "url": "https://aubaestudio.com/",
+            "telephone": "+573134672623",
+            "email": "viadett35@gmail.com",
+            "priceRange": "$$",
+            "currenciesAccepted": "COP",
+            "paymentAccepted": "Nequi, Efectivo",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "Carrera 93a # 131b - 82",
+                "addressLocality": "Bogotá",
+                "addressRegion": "Bogotá D.C.",
+                "addressCountry": "CO"
+            },
+            "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 4.7311707,
+                "longitude": -74.0888325
+            },
+            "areaServed": "Bogotá",
+            "sameAs": [
+                "https://www.instagram.com/auba.nailsestudio",
+                "https://www.tiktok.com/@barbara.viadett"
+            ],
+            "openingHoursSpecification": [
+                {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                    "opens": "09:00",
+                    "closes": "18:00"
+                }
+            ],
+            "potentialAction": {
+                "@type": "ReserveAction",
+                "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "https://aubaestudio.com/booking.html"
+                }
+            }
+        }
+    </script>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -127,64 +182,109 @@
                 <div class="carousel-container">
                     <div class="carousel" id="gallery-carousel">
                         <div class="carousel-slide active">
-                            <img src="assets/servicios clientes/manicura-gel-diseno-elegante.jpg"
-                                alt="Manicura gel con diseño elegante - AUBA Beauty Studio">
+                            <picture>
+                                <source srcset="assets/galeria/manicura-gel-diseno-elegante.webp" type="image/webp">
+                                <img src="assets/galeria/manicura-gel-diseno-elegante.jpg" width="1200" height="800"
+                                    alt="Manicura gel con diseño elegante - AUBA Beauty Studio" fetchpriority="high">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/manicura-francesa-clasica.jpg"
-                                alt="Manicura francesa clásica - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/manicura-francesa-clasica.webp" type="image/webp">
+                                <img src="assets/galeria/manicura-francesa-clasica.jpg" width="1200" height="800"
+                                    alt="Manicura francesa clásica - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/nail-art-floral.jpg"
-                                alt="Nail art floral decorativo - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/nail-art-floral.webp" type="image/webp">
+                                <img src="assets/galeria/nail-art-floral.jpg" width="1200" height="800"
+                                    alt="Nail art floral decorativo - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/pedicura-spa-relajante.jpg"
-                                alt="Pedicura spa relajante - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/pedicura-spa-relajante.webp" type="image/webp">
+                                <img src="assets/galeria/pedicura-spa-relajante.jpg" width="1200" height="800"
+                                    alt="Pedicura spa relajante - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/unas-acrilicas-naturales.jpg"
-                                alt="Uñas acrílicas acabado natural - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/unas-acrilicas-naturales.webp" type="image/webp">
+                                <img src="assets/galeria/unas-acrilicas-naturales.jpg" width="1200" height="800"
+                                    alt="Uñas acrílicas acabado natural - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/manicura-moderna-colores.jpg"
-                                alt="Manicura moderna con colores - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/manicura-moderna-colores.webp" type="image/webp">
+                                <img src="assets/galeria/manicura-moderna-colores.jpg" width="1200" height="800"
+                                    alt="Manicura moderna con colores - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/diseno-unas-minimalista.jpg"
-                                alt="Diseño de uñas minimalista - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/diseno-unas-minimalista.webp" type="image/webp">
+                                <img src="assets/galeria/diseno-unas-minimalista.jpg" width="1200" height="800"
+                                    alt="Diseño de uñas minimalista - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/lifting-pestanas-natural.jpg"
-                                alt="Lifting de pestañas natural - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/lifting-pestanas-natural.webp" type="image/webp">
+                                <img src="assets/galeria/lifting-pestanas-natural.jpg" width="1200" height="800"
+                                    alt="Lifting de pestañas natural - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/diseno-cejas-visagismo.jpg"
-                                alt="Diseño de cejas con visagismo - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/diseno-cejas-visagismo.webp" type="image/webp">
+                                <img src="assets/galeria/diseno-cejas-visagismo.jpg" width="1200" height="800"
+                                    alt="Diseño de cejas con visagismo - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/manicura-gel-nude.jpg"
-                                alt="Manicura gel color nude - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/manicura-gel-nude.webp" type="image/webp">
+                                <img src="assets/galeria/manicura-gel-nude.jpg" width="1200" height="800"
+                                    alt="Manicura gel color nude - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/nail-art-geometrico.jpg"
-                                alt="Nail art con diseño geométrico - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/nail-art-geometrico.webp" type="image/webp">
+                                <img src="assets/galeria/nail-art-geometrico.jpg" width="1200" height="800"
+                                    alt="Nail art con diseño geométrico - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/unas-acrilicas-esculpidas.jpg"
-                                alt="Uñas acrílicas esculpidas - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/unas-acrilicas-esculpidas.webp" type="image/webp">
+                                <img src="assets/galeria/unas-acrilicas-esculpidas.jpg" width="1200" height="800"
+                                    alt="Uñas acrílicas esculpidas - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/pedicura-decorativa.jpg"
-                                alt="Pedicura decorativa profesional - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/pedicura-decorativa.webp" type="image/webp">
+                                <img src="assets/galeria/pedicura-decorativa.jpg" width="1200" height="800"
+                                    alt="Pedicura decorativa profesional - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/manicura-tendencia-2026.jpg"
-                                alt="Manicura tendencia 2026 - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/manicura-tendencia-2026.webp" type="image/webp">
+                                <img src="assets/galeria/manicura-tendencia-2026.jpg" width="1200" height="800"
+                                    alt="Manicura tendencia 2026 - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                         <div class="carousel-slide">
-                            <img src="assets/servicios clientes/tratamiento-manos-spa.jpg"
-                                alt="Tratamiento de manos spa rejuvenecedor - AUBA Beauty Studio" loading="lazy">
+                            <picture>
+                                <source srcset="assets/galeria/tratamiento-manos-spa.webp" type="image/webp">
+                                <img src="assets/galeria/tratamiento-manos-spa.jpg" width="1200" height="800"
+                                    alt="Tratamiento de manos spa rejuvenecedor - AUBA Beauty Studio" loading="lazy">
+                            </picture>
                         </div>
                     </div>
 
@@ -259,14 +359,15 @@
                 <a href="terms.html">Términos de Servicio</a>
             </div>
             <div class="footer-col">
-                <a href="manicurist.html" style="color: var(--color-accent);">👩‍💼 Portal Manicuristas</a>
-                <a href="admin.html" style="color: var(--color-text-secondary);">🔐 Administración</a>
+                <a href="https://www.instagram.com/auba.nailsestudio" target="_blank" rel="noopener noreferrer">Instagram</a>
+                <a href="https://www.tiktok.com/@barbara.viadett" target="_blank" rel="noopener noreferrer">TikTok</a>
             </div>
         </div>
     </footer>
 
     <!-- Floating WhatsApp -->
-    <a href="https://wa.me/573001234567" class="whatsapp-float" target="_blank" aria-label="WhatsApp">
+    <a href="https://wa.me/573134672623" class="whatsapp-float" target="_blank" rel="noopener noreferrer"
+        aria-label="Escríbenos por WhatsApp al +57 313 467 2623">
         <img src="assets/logo whatsApp.png" alt="WhatsApp" width="40" height="40" style="object-fit: contain;">
     </a>
 

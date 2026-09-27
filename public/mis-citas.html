@@ -10,7 +10,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png" />
-    <title>Mis Citas | AUBA</title>
+    <title>Mis Citas | AUBA Beauty Studio</title>
+    <meta name="description" content="Consulta, reprograma o cancela tus citas de AUBA Beauty Studio." />
+    <link rel="canonical" href="https://aubaestudio.com/mis-citas.html" />
+    <meta name="robots" content="noindex, nofollow" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
     <style>
         :root {
@@ -512,8 +515,14 @@
             <h2 style="margin-bottom: 24px;">Cambiar Contraseña</h2>
             <form id="change-password-form">
                 <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Contraseña Actual</label>
+                    <input type="password" id="current-password" required autocomplete="current-password"
+                        style="width: 100%; padding: 12px; border: 1px solid #E5E5EA; border-radius: 8px;">
+                </div>
+                <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: 500;">Nueva Contraseña</label>
-                    <input type="password" id="new-password" required minlength="6" style="width: 100%; padding: 12px; border: 1px solid #E5E5EA; border-radius: 8px;">
+                    <input type="password" id="new-password" required minlength="6" autocomplete="new-password"
+                        style="width: 100%; padding: 12px; border: 1px solid #E5E5EA; border-radius: 8px;">
                 </div>
                 <div class="modal-actions" style="flex-direction: row; margin-top: 24px;">
                     <button type="submit" class="btn-primary" style="flex: 1;">Guardar</button>

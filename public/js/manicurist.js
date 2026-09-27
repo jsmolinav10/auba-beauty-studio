@@ -1006,11 +1006,13 @@ document.getElementById('btn-change-password').addEventListener('click', () => {
 document.getElementById('btn-close-password-modal').addEventListener('click', () => {
     document.getElementById('change-password-modal').style.display = 'none';
     document.getElementById('new-password').value = '';
+    document.getElementById('current-password').value = '';
 });
 
 document.getElementById('change-password-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const newPassword = document.getElementById('new-password').value;
+    const currentPassword = document.getElementById('current-password').value;
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;
     btn.textContent = 'Guardando...';
@@ -1019,9 +1021,9 @@ document.getElementById('change-password-form').addEventListener('submit', async
         const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/change-password`, {
             method: 'PUT',
             headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ newPassword })
+            body: JSON.stringify({ currentPassword, newPassword })
         });
-        
+
         const data = await response.json();
         if (data.success) {
             alert('Contraseña actualizada correctamente. Por favor inicia sesión nuevamente con tu nueva contraseña.');
@@ -1037,5 +1039,6 @@ document.getElementById('change-password-form').addEventListener('submit', async
         btn.textContent = 'Guardar';
         document.getElementById('change-password-modal').style.display = 'none';
         document.getElementById('new-password').value = '';
+        document.getElementById('current-password').value = '';
     }
 });
