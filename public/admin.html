@@ -49,6 +49,10 @@
                 <span class="nav-icon">👥</span>
                 Clientes
             </a>
+            <a href="#" class="nav-item" data-section="security">
+                <span class="nav-icon">🔒</span>
+                Seguridad
+            </a>
         </nav>
         <div class="sidebar-footer">
             <button id="btn-logout" class="btn-logout">
@@ -252,6 +256,52 @@
                 </table>
             </div>
         </section>
+
+        <!-- Security Section -->
+        <section id="security-section" class="content-section hidden">
+            <div class="section-header-row">
+                <h2>Seguridad y Acceso</h2>
+            </div>
+
+            <div class="card">
+                <h3>🔐 Pregunta de Seguridad — Portal Manicuristas</h3>
+                <p class="form-description">
+                    Esta pregunta es compartida por todas las manicuristas. Al hacer clic en
+                    "Portal Manicuristas" en la página principal, deben responder correctamente
+                    para acceder al portal.
+                </p>
+
+                <form id="security-form" class="modal-form">
+                    <div id="security-error" class="error-message hidden"></div>
+                    <div id="security-success" class="auth-success hidden"></div>
+
+                    <div class="form-group">
+                        <label>Pregunta</label>
+                        <input type="text" id="security-question" class="form-input"
+                            placeholder="¿Cuál es el nombre del estudio?" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Respuesta</label>
+                        <input type="text" id="security-answer" class="form-input"
+                            placeholder="Respuesta que deben ingresar las manicuristas" />
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="submit" class="btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <h3>🔑 Acceso Administrador</h3>
+                <p class="form-description">
+                    El acceso al panel de administración requiere responder la pregunta de seguridad
+                    "¿Como ves?" con la respuesta "Solo con corazón". Este acceso se muestra de forma
+                    discreta en el texto <strong>AUBA</strong> del pie de página.
+                </p>
+            </div>
+        </section>
     </main>
 
     <!-- Modal for editing -->
@@ -274,6 +324,10 @@
     </div>
 
     <script src="js/admin.js"></script>
+    <script src="js/security-gate.js"></script>
+    <script>
+        window.SECURITY_GATE_PORTAL = 'admin';
+    </script>
     <!-- PWA Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {

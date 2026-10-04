@@ -100,6 +100,25 @@ CREATE INDEX IF NOT EXISTS idx_users_phone
     ON users (phone);
 
 -- ============================================
+-- CONFIGURACIÓN DE LA APLICACIÓN
+-- ============================================
+CREATE TABLE IF NOT EXISTS app_settings (
+    setting_key   VARCHAR(100) PRIMARY KEY,
+    setting_value TEXT NOT NULL,
+    description   TEXT
+);
+
+-- Pregunta de seguridad compartida por todas las manicuristas.
+-- Variable: puede cambiarse desde el panel de admin.
+INSERT INTO app_settings (setting_key, setting_value, description)
+VALUES ('manicurist_security_question', '¿Cuál es el nombre del estudio?', 'Pregunta de seguridad para acceder al portal de manicuristas')
+ON CONFLICT (setting_key) DO NOTHING;
+
+INSERT INTO app_settings (setting_key, setting_value, description)
+VALUES ('manicurist_security_answer', 'auba', 'Respuesta de seguridad para acceder al portal de manicuristas')
+ON CONFLICT (setting_key) DO NOTHING;
+
+-- ============================================
 -- NOTAS
 -- ============================================
 -- 1. No hay ON DELETE CASCADE en las claves foráneas a propósito: se conserva el

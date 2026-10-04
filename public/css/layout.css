@@ -108,6 +108,44 @@
     text-decoration: underline;
 }
 
+/* Admin portal link: integrado en el texto "AUBA" sin estilos visibles */
+.admin-portal-link {
+    color: inherit;
+    text-decoration: none;
+    font-weight: inherit;
+    cursor: pointer;
+}
+
+.admin-portal-link:hover {
+    text-decoration: none;
+}
+
+/* Manicurist portal link visible en el footer */
+.portal-manicuristas {
+    font-size: 13px;
+}
+
+.portal-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-text-secondary);
+}
+
+.portal-icon {
+    font-size: 16px;
+}
+
+.manicurist-portal-link {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.manicurist-portal-link:hover {
+    text-decoration: underline;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .glass-header {

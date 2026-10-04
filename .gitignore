@@ -15,3 +15,6 @@ transcript_*.txt
 
 # Artefactos locales de la base de datos
 schema.json
+
+.vercel
+.env*

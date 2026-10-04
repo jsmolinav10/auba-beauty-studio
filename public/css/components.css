@@ -817,6 +817,115 @@
     margin-top: 4px;
 }
 
+/* ================================================
+   SECURITY GATE MODAL
+   ================================================ */
+
+.security-gate-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.security-gate-modal-overlay.sg-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.security-gate-modal {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+.security-gate-modal-overlay.sg-active .security-gate-modal {
+    transform: scale(1);
+}
+
+.sg-header {
+    margin-bottom: 24px;
+}
+
+.sg-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.sg-title {
+    font-size: 1.5rem;
+    color: var(--color-text-main);
+    margin: 0;
+}
+
+.sg-question {
+    font-size: 1.25rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 24px;
+    font-weight: 500;
+}
+
+.sg-answer {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--color-divider);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.sg-answer:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.sg-error {
+    color: var(--color-error);
+    font-size: 14px;
+    margin-bottom: 16px;
+    min-height: 20px;
+}
+
+.sg-submit {
+    background-color: var(--color-text-main);
+    color: var(--color-white);
+    padding: 14px 32px;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    transition: var(--transition-base);
+}
+
+.sg-submit:hover:not(:disabled) {
+    background-color: var(--color-accent);
+}
+
+.sg-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* Forgot Password Link */
 .forgot-password-link {
     text-align: right;

@@ -248,9 +248,40 @@ body {
     transition: border-color 0.2s;
 }
 
-.login-form input:focus {
+.form-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    background: white;
+}
+
+.form-input:focus {
     outline: none;
     border-color: var(--color-accent);
+}
+
+.form-description {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.auth-success {
+    background: #E8F5E9;
+    color: var(--color-success);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.auth-success.hidden {
+    display: none;
 }
 
 .error-message {

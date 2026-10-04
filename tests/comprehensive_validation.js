@@ -467,6 +467,85 @@ async function runComprehensiveValidation() {
     });
 
     // ============================================================
+    // MÓDULO 8b: PUERTA DE SEGURIDAD (Security Gate)
+    // ============================================================
+    console.log('\n--- 🔐 MÓDULO 8b: PUERTA DE SEGURIDAD (Security Gate) ---');
+
+    await test('SECURITY_GATE', 'GET pregunta de seguridad para manicuristas (público)', async () => {
+        const res = await request('GET', '/api/settings/manicurist-question');
+        return { pass: res.status === 200 && res.json && res.json.question, reason: `Pregunta: "${res.json?.question}"` };
+    });
+
+    await test('SECURITY_GATE', 'POST verifica respuesta correcta para admin', async () => {
+        const res = await request('POST', '/api/settings/verify', { portal: 'admin', answer: 'Solo con corazón' });
+        return { pass: res.status === 200 && res.json && res.json.valid === true, reason: `Valid: ${res.json?.valid}` };
+    });
+
+    await test('SECURITY_GATE', 'POST rechaza respuesta incorrecta para admin', async () => {
+        const res = await request('POST', '/api/settings/verify', { portal: 'admin', answer: 'incorrecta' });
+        return { pass: res.status === 200 && res.json && res.json.valid === false, reason: `Valid: ${res.json?.valid}` };
+    });
+
+    await test('SECURITY_GATE', 'POST verifica respuesta correcta para manicurista', async () => {
+        const questionRes = await request('GET', '/api/settings/manicurist-question');
+        // First get the answer from admin settings
+        const adminRes = await request('GET', '/api/admin/settings/security', null, {
+            'Authorization': `Bearer ${adminJwtToken}`
+        });
+        const storedAnswer = adminRes.json?.manicurist_security_answer;
+        const res = await request('POST', '/api/settings/verify', { portal: 'manicurist', answer: storedAnswer || 'auba' });
+        return { pass: res.status === 200 && res.json && res.json.valid === true, reason: `Valid: ${res.json?.valid}` };
+    });
+
+    await test('SECURITY_GATE', 'PUT cambiar pregunta de seguridad requiere auth de admin', async () => {
+        const res = await request('PUT', '/api/admin/settings/security', {
+            manicurist_security_question: '¿Cuál es el color favorito?'
+        });
+        return { pass: res.status === 401, reason: `Status ${res.status} (esperado 401)` };
+    });
+
+    if (adminJwtToken) {
+        const newQuestion = '¿Cuál es tu color favorito?';
+        const newAnswer = 'rosa';
+
+        await test('SECURITY_GATE', 'Admin actualiza la pregunta de seguridad', async () => {
+            const res = await request('PUT', '/api/admin/settings/security', {
+                manicurist_security_question: newQuestion,
+                manicurist_security_answer: newAnswer
+            }, {
+                'Authorization': `Bearer ${adminJwtToken}`
+            });
+            return { pass: res.status === 200 && res.json && res.json.success, reason: res.json?.message || res.json?.error };
+        });
+
+        await test('SECURITY_GATE', 'La nueva pregunta se obtiene vía GET', async () => {
+            const res = await request('GET', '/api/settings/manicurist-question');
+            return { pass: res.status === 200 && res.json.question === newQuestion, reason: `Pregunta: "${res.json?.question}"` };
+        });
+
+        await test('SECURITY_GATE', 'La nueva respuesta se verifica correctamente', async () => {
+            const res = await request('POST', '/api/settings/verify', { portal: 'manicurist', answer: newAnswer });
+            return { pass: res.status === 200 && res.json && res.json.valid === true, reason: `Valid: ${res.json?.valid}` };
+        });
+
+        await test('SECURITY_GATE', 'La respuesta antigua ya no es válida', async () => {
+            const res = await request('POST', '/api/settings/verify', { portal: 'manicurist', answer: 'auba' });
+            return { pass: res.status === 200 && res.json && res.json.valid === false, reason: `Valid: ${res.json?.valid}` };
+        });
+
+        // Restore default
+        await test('SECURITY_GATE', 'Admin restaura la pregunta por defecto', async () => {
+            const res = await request('PUT', '/api/admin/settings/security', {
+                manicurist_security_question: '¿Cuál es el nombre del estudio?',
+                manicurist_security_answer: 'auba'
+            }, {
+                'Authorization': `Bearer ${adminJwtToken}`
+            });
+            return { pass: res.status === 200 && res.json && res.json.success, reason: res.json?.message };
+        });
+    }
+
+    // ============================================================
     // MÓDULO 9: SEGURIDAD, CABECERAS Y ASSETS PWA
     // ============================================================
     console.log('\n--- 🛡️ MÓDULO 9: SEGURIDAD Y RECURSOS ESTÁTICOS / PWA ---');

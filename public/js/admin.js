@@ -89,6 +89,15 @@ const AdminApp = {
         document.getElementById('filter-date')?.addEventListener('change', () => this.loadBookings());
         document.getElementById('filter-status')?.addEventListener('change', () => this.loadBookings());
         document.getElementById('search-users')?.addEventListener('input', (e) => this.searchUsers(e.target.value));
+
+        // Security settings form
+        const securityForm = document.getElementById('security-form');
+        if (securityForm) {
+            securityForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveSecuritySettings();
+            });
+        }
     },
 
     setupNavigation() {
@@ -118,7 +127,8 @@ const AdminApp = {
             bookings: 'Reservas',
             services: 'Servicios',
             manicurists: 'Manicuristas',
-            users: 'Clientes'
+            users: 'Clientes',
+            security: 'Seguridad'
         };
         document.getElementById('section-title').textContent = titles[section] || 'Dashboard';
 
@@ -146,6 +156,9 @@ const AdminApp = {
                 break;
             case 'users':
                 this.loadUsers();
+                break;
+            case 'security':
+                this.loadSecuritySettings();
                 break;
         }
     },
@@ -741,6 +754,60 @@ const AdminApp = {
             cancelled: 'Cancelada'
         };
         return labels[status] || status;
+    },
+
+    async loadSecuritySettings() {
+        try {
+            const response = await this.authFetch(`${this.API_BASE}/admin/settings/security`);
+            const data = await response.json();
+
+            document.getElementById('security-question').value = data.manicurist_security_question || '';
+            document.getElementById('security-answer').value = data.manicurist_security_answer || '';
+            document.getElementById('security-error').classList.add('hidden');
+            document.getElementById('security-success').classList.add('hidden');
+        } catch (error) {
+            console.error('Error loading security settings:', error);
+        }
+    },
+
+    async saveSecuritySettings() {
+        const question = document.getElementById('security-question').value.trim();
+        const answer = document.getElementById('security-answer').value.trim();
+        const errorEl = document.getElementById('security-error');
+        const successEl = document.getElementById('security-success');
+
+        if (!question || !answer) {
+            errorEl.textContent = 'Debes completar la pregunta y la respuesta';
+            errorEl.classList.remove('hidden');
+            successEl.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const response = await this.authFetch(`${this.API_BASE}/admin/settings/security`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    manicurist_security_question: question,
+                    manicurist_security_answer: answer
+                })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                successEl.textContent = 'Configuración actualizada correctamente';
+                successEl.classList.remove('hidden');
+                errorEl.classList.add('hidden');
+            } else {
+                errorEl.textContent = result.error || 'Error al guardar';
+                errorEl.classList.remove('hidden');
+                successEl.classList.add('hidden');
+            }
+        } catch (error) {
+            errorEl.textContent = 'Error de conexión';
+            errorEl.classList.remove('hidden');
+            successEl.classList.add('hidden');
+        }
     }
 };
 

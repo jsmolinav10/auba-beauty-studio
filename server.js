@@ -37,6 +37,7 @@ const paymentsRouter = require('./routes/payments');
 const manicuristsRouter = require('./routes/manicurists');
 const adminRouter = require('./routes/admin');
 const { router: notificationsRouter, sendDailyReminders } = require('./routes/notifications');
+const settingsRouter = require('./routes/settings');
 const db = require('./db');
 
 // ============================================
@@ -166,6 +167,27 @@ async function initDB() {
         // Test connection
         await db.execute('SELECT 1');
         app.locals.pool = db; // Reemplazamos pool con nuestro db.js
+
+        // Ensure app_settings table exists (idempotent)
+        await db.execute(
+            'CREATE TABLE IF NOT EXISTS app_settings (id SERIAL, setting_key VARCHAR(100) UNIQUE NOT NULL, setting_value TEXT NOT NULL, description TEXT)'
+        );
+
+        // Add id column if table was created without it in a prior migration
+        await db.execute('ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS id SERIAL');
+
+        // Default manicurist security question/answer
+        await db.execute(
+            "INSERT INTO app_settings (setting_key, setting_value, description) " +
+            "VALUES ('manicurist_security_question', '¿Cuál es el nombre del estudio?', 'Pregunta de seguridad para acceder al portal de manicuristas') " +
+            "ON CONFLICT (setting_key) DO NOTHING"
+        );
+        await db.execute(
+            "INSERT INTO app_settings (setting_key, setting_value, description) " +
+            "VALUES ('manicurist_security_answer', 'auba', 'Respuesta de seguridad para acceder al portal de manicuristas') " +
+            "ON CONFLICT (setting_key) DO NOTHING"
+        );
+
         console.log('✅ Conectado a Supabase PostgreSQL');
     } catch (error) {
         console.error('❌ Error conectando a PostgreSQL:', error.message);
@@ -185,6 +207,7 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api/manicurists', manicuristsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api', settingsRouter);
 
 // ============================================
 // HEALTH CHECK
