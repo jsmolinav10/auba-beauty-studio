@@ -10,7 +10,7 @@ const { requireAuth } = require('./middleware');
 const DEFAULT_QUESTION = '¿Cuál es el nombre del estudio?';
 const DEFAULT_ANSWER = 'auba';
 const ADMIN_QUESTION = '¿Como ves?';
-const ADMIN_ANSWER = 'solo con corazón';
+const ADMIN_ANSWER = 'solo con el corazón';
 
 /**
  * GET /api/settings/manicurist-question

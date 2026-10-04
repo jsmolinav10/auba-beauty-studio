@@ -477,7 +477,7 @@ async function runComprehensiveValidation() {
     });
 
     await test('SECURITY_GATE', 'POST verifica respuesta correcta para admin', async () => {
-        const res = await request('POST', '/api/settings/verify', { portal: 'admin', answer: 'Solo con corazón' });
+        const res = await request('POST', '/api/settings/verify', { portal: 'admin', answer: 'Solo con el corazón' });
         return { pass: res.status === 200 && res.json && res.json.valid === true, reason: `Valid: ${res.json?.valid}` };
     });
 

@@ -3,7 +3,7 @@
  * Maneja la pregunta de seguridad antes de acceder a los portales
  * de admin y manicuristas.
  *
- * - Admin: pregunta fija "¿Como ves?" → respuesta "Solo con corazón"
+ * - Admin: pregunta fija "¿Como ves?" → respuesta "Solo con el corazón"
  * - Manicuristas: pregunta variable (obtenida del API) → respuesta variable
  *
  * El estado se persiste en sessionStorage del tab actual.
@@ -57,11 +57,12 @@ const SecurityGate = {
 
         const passed = sessionStorage.getItem(key) === 'true';
         if (passed) {
-            this.hideModal();
+            this.removeModal();
             return true;
         }
 
         // Show security gate modal
+        document.body.classList.add('security-gate-active');
         if (this.portal === 'admin') {
             document.getElementById('sg-title').textContent = 'Acceso Administrador';
             document.getElementById('sg-question').textContent = this.ADMIN_QUESTION;
@@ -77,23 +78,36 @@ const SecurityGate = {
         }
 
         // Hide portal views behind the modal
-        const loginView = document.getElementById('login-view');
-        const dashboardView = document.getElementById('dashboard-view');
-        const loginSection = document.getElementById('login-section');
-        const dashboardSection = document.getElementById('dashboard-section');
-        if (loginView) loginView.style.display = 'none';
-        if (dashboardView) dashboardView.style.display = 'none';
-        if (loginSection) loginSection.classList.add('hidden');
-        if (dashboardSection) dashboardSection.classList.add('hidden');
-        const sidebar = document.querySelector('.sidebar');
-        if (sidebar) sidebar.classList.add('hidden');
-
+        this.hidePortalViews();
         document.getElementById('sg-error').textContent = '';
         document.getElementById('sg-answer').value = '';
-        document.getElementById('sg-answer').focus();
-
         this.showModal();
+        document.getElementById('sg-answer').focus();
         return false;
+    },
+
+    hidePortalViews() {
+        const elements = [
+            document.getElementById('login-view'),
+            document.getElementById('dashboard-view'),
+            document.getElementById('login-section'),
+            document.getElementById('dashboard-section')
+        ];
+        if (document.getElementById('login-view')) document.getElementById('login-view').style.display = 'none';
+        if (document.getElementById('dashboard-view')) document.getElementById('dashboard-view').style.display = 'none';
+        document.getElementById('login-section')?.classList.add('hidden');
+        document.getElementById('dashboard-section')?.classList.add('hidden');
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar) sidebar.classList.add('hidden');
+    },
+
+    showPortalViews() {
+        if (document.getElementById('login-view')) document.getElementById('login-view').style.display = 'block';
+        if (document.getElementById('dashboard-view')) document.getElementById('dashboard-view').style.display = 'none';
+        document.getElementById('login-section')?.classList.remove('hidden');
+        document.getElementById('dashboard-section')?.classList.add('hidden');
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar) sidebar.classList.remove('hidden');
     },
 
     showModal() {
@@ -104,8 +118,26 @@ const SecurityGate = {
 
     hideModal() {
         const modal = document.getElementById('security-gate-modal');
-        if (modal) modal.classList.remove('sg-active');
+        if (modal) {
+            modal.classList.remove('sg-active');
+            // Fully remove from DOM after transition to prevent any visual artifact
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            }, 300);
+        }
         document.body.style.overflow = '';
+        document.body.classList.remove('security-gate-active');
+    },
+
+    removeModal() {
+        const modal = document.getElementById('security-gate-modal');
+        if (modal && modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+        }
+        document.body.style.overflow = '';
+        document.body.classList.remove('security-gate-active');
     },
 
     async verify() {
@@ -115,11 +147,12 @@ const SecurityGate = {
 
         if (!answer) {
             errorEl.textContent = 'Por favor, ingresa una respuesta';
+            document.getElementById('sg-answer').focus();
             return;
         }
 
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Verificando...';
+        submitBtn.classList.add('loading');
 
         try {
             const res = await fetch(`${this.API_BASE}/settings/verify`, {
@@ -134,7 +167,7 @@ const SecurityGate = {
                     ? this.STORAGE_KEY_ADMIN
                     : this.STORAGE_KEY_MANICURIST;
                 sessionStorage.setItem(key, 'true');
-                this.hideModal();
+                this.removeModal();
                 this.onVerified();
             } else {
                 errorEl.textContent = 'Respuesta incorrecta. Inténtalo de nuevo.';
@@ -145,19 +178,20 @@ const SecurityGate = {
             errorEl.textContent = 'Error de conexión. Intenta de nuevo.';
         } finally {
             submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
             submitBtn.textContent = 'Verificar';
         }
     },
 
     onVerified() {
+        // Ensure modal is completely removed from DOM
+        this.removeModal();
+        
         if (this.portal === 'admin') {
-            const loginSection = document.getElementById('login-section');
-            const dashboardSection = document.getElementById('dashboard-section');
-            const sidebar = document.querySelector('.sidebar');
-            if (loginSection) loginSection.classList.remove('hidden');
-            if (dashboardSection) dashboardSection.classList.add('hidden');
-            if (sidebar) sidebar.classList.add('hidden');
-            AdminApp.checkAuth();
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('dashboard-section').classList.add('hidden');
+            document.querySelector('.sidebar')?.classList.add('hidden');
+            window.AdminApp.checkAuth();
         } else {
             const loginView = document.getElementById('login-view');
             const dashboardView = document.getElementById('dashboard-view');
