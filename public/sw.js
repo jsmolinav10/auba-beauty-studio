@@ -3,7 +3,7 @@
  * Estrategia: Cache First para estáticos, Network First para API
  */
 
-const CACHE_NAME = 'auba-pwa-v10';
+const CACHE_NAME = 'auba-pwa-v11';
 // Las galerías pesan ~29 MB, así que no se precachean: se sirven bajo demanda y
 // permanecen en la caché por el visitedor.
 const STATIC_ASSETS = [
@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
     '/js/app.js',
     '/js/auth.js',
     '/js/my-bookings.js',
+    '/js/security-gate.js',
     '/assets/Logo Auba.png',
     '/assets/nequi-qr.png',
     '/assets/icons/icon-192x192.png',
