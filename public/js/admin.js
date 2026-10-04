@@ -58,7 +58,7 @@ const AdminApp = {
         const response = await fetch(url, options);
         if (response.status === 401) {
             this.clearSession();
-            this.showLoginScreen();
+            this.showLogin();
             throw new Error('Sesión expirada');
         }
         return response;
