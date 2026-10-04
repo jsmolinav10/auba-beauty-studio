@@ -400,7 +400,7 @@ router.put('/manicurists/:id/reset-password', async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
-        const temporaryPassword = generateTemporaryPassword();
+        const temporaryPassword = 'auba2026';
         const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
         const [existing] = await pool.execute('SELECT id FROM manicurists WHERE id = ?', [id]);
