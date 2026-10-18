@@ -826,11 +826,111 @@ async function searchClients(query, source) {
             `).join('');
             resultsEl.classList.add('show');
         } else {
-            resultsEl.innerHTML = '<div style="padding: 12px 16px; color: #999; font-size: 13px;">No se encontraron clientas</div>';
+            const escapedQuery = query.replace(/'/g, "\\'");
+            resultsEl.innerHTML = `
+                <div style="padding: 12px 16px; font-size: 13px;">
+                    <div style="color: #6E6E7A; margin-bottom: 8px;">No se encontraron clientas</div>
+                    <button type="button" onclick="openQuickClientModal('${source === 'phone' ? escapedQuery : ''}', '${source === 'name' ? escapedQuery : ''}')" style="width: 100%; padding: 8px 12px; background: #D4AF37; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        ➕ Registrar nueva clienta
+                    </button>
+                </div>
+            `;
             resultsEl.classList.add('show');
         }
     } catch (e) {
         console.error('Error buscando clientas:', e);
+    }
+}
+
+function openQuickClientModal(initialPhone = '', initialName = '') {
+    document.querySelectorAll('.search-results').forEach(el => el.classList.remove('show'));
+
+    const phoneInput = document.getElementById('quick-client-phone');
+    const nameInput = document.getElementById('quick-client-name');
+    const errorEl = document.getElementById('quick-client-error');
+
+    const curPhone = document.getElementById('search-client-phone')?.value?.trim() || '';
+    const curName = document.getElementById('search-client-name')?.value?.trim() || '';
+
+    if (phoneInput) phoneInput.value = initialPhone || (/^\d+$/.test(curPhone) ? curPhone : '');
+    if (nameInput) nameInput.value = initialName || (!/^\d+$/.test(curName) ? curName : '');
+    if (errorEl) errorEl.style.display = 'none';
+
+    const modal = document.getElementById('quick-client-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        if (nameInput && !nameInput.value) {
+            nameInput.focus();
+        } else if (phoneInput) {
+            phoneInput.focus();
+        }
+    }
+}
+
+function closeQuickClientModal() {
+    const modal = document.getElementById('quick-client-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function handleQuickClientSubmit(e) {
+    e.preventDefault();
+    const nameInput = document.getElementById('quick-client-name');
+    const phoneInput = document.getElementById('quick-client-phone');
+    const errorEl = document.getElementById('quick-client-error');
+    const submitBtn = document.getElementById('btn-save-quick-client');
+
+    const name = nameInput ? nameInput.value.trim() : '';
+    const phone = phoneInput ? phoneInput.value.trim().replace(/\s/g, '') : '';
+
+    if (name.length < 3) {
+        if (errorEl) {
+            errorEl.textContent = 'El nombre debe tener al menos 3 caracteres.';
+            errorEl.style.display = 'block';
+        }
+        return;
+    }
+    if (!/^\d{10}$/.test(phone)) {
+        if (errorEl) {
+            errorEl.textContent = 'El celular debe tener 10 dígitos numéricos.';
+            errorEl.style.display = 'block';
+        }
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Guardando...';
+    }
+    if (errorEl) errorEl.style.display = 'none';
+
+    try {
+        const res = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/clients`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ name, phone })
+        });
+        const data = await res.json();
+
+        if (data.success && data.client) {
+            closeQuickClientModal();
+            selectClient(data.client.id, data.client.name, data.client.phone);
+        } else {
+            if (errorEl) {
+                errorEl.textContent = data.error || 'Error al registrar la clienta';
+                errorEl.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        console.error('Error registrando clienta express:', err);
+        if (errorEl) {
+            errorEl.textContent = 'Error de conexión al registrar clienta';
+            errorEl.style.display = 'block';
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Guardar y Seleccionar';
+        }
     }
 }
 

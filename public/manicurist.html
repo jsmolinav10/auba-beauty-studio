@@ -1052,7 +1052,10 @@
                     <div id="book-form-container">
                         <!-- Buscar clienta -->
                         <div class="book-form-group">
-                            <label>🔍 Buscar Clienta</label>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <label style="margin-bottom: 0;">🔍 Buscar Clienta</label>
+                                <button type="button" class="btn-register-client-trigger" onclick="openQuickClientModal()" style="background: none; border: 1px dashed var(--color-accent); color: var(--color-text-main); font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">➕ Nueva Clienta Express</button>
+                            </div>
                             <div class="book-search-row">
                                 <div class="search-wrapper">
                                     <input type="text" id="search-client-phone" placeholder="Buscar por celular..."
@@ -1128,6 +1131,34 @@
                 <div style="display: flex; gap: 10px; margin-top: 16px;">
                     <button type="submit" class="btn-primary" style="flex: 1;">Guardar</button>
                     <button type="button" id="btn-close-password-modal" class="btn-primary" style="flex: 1; background: #666;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Registro Rápido de Clienta -->
+    <div id="quick-client-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 24px; border-radius: 16px; max-width: 420px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 1.15rem; color: #2C2C3E;">➕ Registrar Nueva Clienta</h3>
+                <button type="button" onclick="closeQuickClientModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #6E6E7A; line-height: 1;">✕</button>
+            </div>
+            <p style="font-size: 13px; color: #6E6E7A; margin-bottom: 16px; margin-top: 0;">
+                Ingresa el nombre y celular para registrarla y seleccionarla de inmediato para la cita.
+            </p>
+            <form id="quick-client-form" onsubmit="handleQuickClientSubmit(event)">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #2C2C3E;">Nombre Completo</label>
+                    <input type="text" id="quick-client-name" required placeholder="Ej: María Camila Pérez" style="width: 100%; padding: 10px 14px; border: 2px solid #E5E5EA; border-radius: 10px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #2C2C3E;">Número de Celular (10 dígitos)</label>
+                    <input type="tel" id="quick-client-phone" required placeholder="3001234567" maxlength="10" style="width: 100%; padding: 10px 14px; border: 2px solid #E5E5EA; border-radius: 10px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div id="quick-client-error" style="color: #FF3B30; font-size: 13px; margin-bottom: 12px; display: none;"></div>
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <button type="button" onclick="closeQuickClientModal()" style="flex: 1; padding: 10px; background: #F0F0F5; color: #2C2C3E; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Cancelar</button>
+                    <button type="submit" id="btn-save-quick-client" style="flex: 2; padding: 10px; background: #D4AF37; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Guardar y Seleccionar</button>
                 </div>
             </form>
         </div>

@@ -210,6 +210,63 @@ router.get('/:id/search-clients', requireSelfOrAdmin, async (req, res) => {
 });
 
 // ============================================
+// REGISTRAR CLIENTA EXPRESS (por manicurista)
+// ============================================
+
+router.post('/:id/clients', requireSelfOrAdmin, async (req, res) => {
+    try {
+        const pool = req.app.locals.pool;
+        const { name, phone } = req.body;
+
+        if (!name || name.trim().length < 3) {
+            return res.status(400).json({ success: false, error: 'El nombre debe tener al menos 3 caracteres' });
+        }
+
+        const cleanPhone = phone ? phone.replace(/\s/g, '') : '';
+        if (!cleanPhone || !/^\d{10}$/.test(cleanPhone)) {
+            return res.status(400).json({ success: false, error: 'El número de celular debe tener 10 dígitos' });
+        }
+
+        const [existing] = await pool.execute(
+            'SELECT id, name, phone FROM users WHERE phone = ?',
+            [cleanPhone]
+        );
+
+        if (existing.length > 0) {
+            return res.json({
+                success: true,
+                client: existing[0],
+                existing: true,
+                message: 'La clienta ya estaba registrada y fue seleccionada'
+            });
+        }
+
+        const defaultPassword = 'auba2026';
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+        const [result] = await pool.execute(
+            'INSERT INTO users (name, phone, password, data_consent, consent_date) VALUES (?, ?, ?, TRUE, NOW())',
+            [name.trim(), cleanPhone, hashedPassword]
+        );
+
+        res.json({
+            success: true,
+            client: {
+                id: result.insertId,
+                name: name.trim(),
+                phone: cleanPhone
+            },
+            isNew: true,
+            message: 'Clienta registrada exitosamente'
+        });
+
+    } catch (error) {
+        console.error('Error registrando clienta express:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+// ============================================
 // HORARIOS DISPONIBLES
 // ============================================
 
@@ -260,10 +317,34 @@ router.post('/:id/bookings', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
-        const { client_id, service_id, booking_date, booking_time } = req.body;
+        let { client_id, client_name, client_phone, service_id, booking_date, booking_time } = req.body;
 
-        if (!client_id || !service_id || !booking_date || !booking_time) {
+        if ((!client_id && (!client_name || !client_phone)) || !service_id || !booking_date || !booking_time) {
             return res.status(400).json({ success: false, error: 'Todos los campos son requeridos' });
+        }
+
+        // Si no se proporcionó client_id pero sí datos de clienta, buscar o crear express
+        if (!client_id && client_phone) {
+            const cleanPhone = client_phone.replace(/\s/g, '');
+            if (!/^\d{10}$/.test(cleanPhone)) {
+                return res.status(400).json({ success: false, error: 'El número de celular debe tener 10 dígitos' });
+            }
+            if (!client_name || client_name.trim().length < 3) {
+                return res.status(400).json({ success: false, error: 'El nombre debe tener al menos 3 caracteres' });
+            }
+
+            const [existing] = await pool.execute('SELECT id, name FROM users WHERE phone = ?', [cleanPhone]);
+            if (existing.length > 0) {
+                client_id = existing[0].id;
+            } else {
+                const defaultPassword = 'auba2026';
+                const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+                const [newUser] = await pool.execute(
+                    'INSERT INTO users (name, phone, password, data_consent, consent_date) VALUES (?, ?, ?, TRUE, NOW())',
+                    [client_name.trim(), cleanPhone, hashedPassword]
+                );
+                client_id = newUser.insertId;
+            }
         }
 
         const [clients] = await pool.execute('SELECT id, name FROM users WHERE id = ?', [client_id]);

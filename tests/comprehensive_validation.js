@@ -129,6 +129,8 @@ async function runComprehensiveValidation() {
     let targetManicuristId = null;
     let targetServiceId = null;
     let createdBookingId = null;
+    let expressTestClientId = null;
+    const expressClientPhone = '31' + Math.floor(10000000 + Math.random() * 89999999);
 
     // Helper for dates
     const futureDateObj = new Date();
@@ -411,6 +413,31 @@ async function runComprehensiveValidation() {
         return { pass: res.status === 200 && res.json && res.json.success, reason: res.json?.message };
     });
 
+    await test('MANICURIST_PORTAL', 'Registro express de nueva clienta por portal de manicurista', async () => {
+        if (!adminJwtToken) return { skip: true, reason: 'Requiere token de sesión autorizado' };
+        const res = await request('POST', `/api/manicurists/${targetManicuristId || 1}/clients`, {
+            name: 'Clienta Express Test',
+            phone: expressClientPhone
+        }, {
+            'Authorization': `Bearer ${adminJwtToken}`
+        });
+        const pass = res.status === 200 && res.json && res.json.success && res.json.client?.id;
+        if (pass) expressTestClientId = res.json.client.id;
+        return { pass, reason: `ID creada: ${res.json?.client?.id}, isNew: ${res.json?.isNew}` };
+    });
+
+    await test('MANICURIST_PORTAL', 'Selección automática si la clienta ya existe por celular', async () => {
+        if (!adminJwtToken || !expressTestClientId) return { skip: true, reason: 'Sin clienta express previa' };
+        const res = await request('POST', `/api/manicurists/${targetManicuristId || 1}/clients`, {
+            name: 'Clienta Express Test Nombre Modificado',
+            phone: expressClientPhone
+        }, {
+            'Authorization': `Bearer ${adminJwtToken}`
+        });
+        const pass = res.status === 200 && res.json && res.json.existing === true && res.json.client?.id === expressTestClientId;
+        return { pass, reason: `Cliente existente detectado con ID: ${res.json?.client?.id}` };
+    });
+
     // ============================================================
     // MÓDULO 7: PAGOS Y CONFIGURACIÓN NEQUI
     // ============================================================
@@ -635,6 +662,10 @@ async function runComprehensiveValidation() {
         if (registeredUserId) {
             await db.execute('DELETE FROM users WHERE id = ?', [registeredUserId]);
             console.log(`  🔹 Usuario temporal #${registeredUserId} eliminado`);
+        }
+        if (expressTestClientId) {
+            await db.execute('DELETE FROM users WHERE id = ?', [expressTestClientId]);
+            console.log(`  🔹 Clienta express temporal #${expressTestClientId} eliminada`);
         }
     } catch (cleanErr) {
         console.warn('  ⚠️ Advertencia durante limpieza:', cleanErr.message);
