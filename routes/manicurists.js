@@ -434,6 +434,70 @@ router.post('/:id/bookings', requireSelfOrAdmin, async (req, res) => {
 // ============================================
 
 // ============================================
+// INDICADORES DE RENDIMIENTO (DÍA, SEMANA, MES)
+// ============================================
+
+router.get('/:id/stats', requireSelfOrAdmin, async (req, res) => {
+    try {
+        const pool = req.app.locals.pool;
+        const { id } = req.params;
+
+        // Citas del día
+        const [todayRows] = await pool.execute(
+            `SELECT COUNT(*) as count 
+             FROM bookings 
+             WHERE manicurist_id = ? 
+               AND booking_date = CURRENT_DATE 
+               AND status != 'cancelled'`,
+            [id]
+        );
+
+        // Citas de la semana (Lunes a Domingo)
+        const [weekRows] = await pool.execute(
+            `SELECT COUNT(*) as count 
+             FROM bookings 
+             WHERE manicurist_id = ? 
+               AND booking_date >= CURRENT_DATE - EXTRACT(ISODOW FROM CURRENT_DATE)::INT + 1
+               AND booking_date <= CURRENT_DATE - EXTRACT(ISODOW FROM CURRENT_DATE)::INT + 7
+               AND status != 'cancelled'`,
+            [id]
+        );
+
+        // Ingresos generados en el mes (confirmadas o completadas)
+        // Regla: 50% de ganancia para la manicurista (mano de obra), 50% para el estudio (insumos)
+        const [monthRows] = await pool.execute(
+            `SELECT COALESCE(SUM(s.price), 0) as total_services,
+                    COUNT(*) as completed_count
+             FROM bookings b
+             JOIN services s ON b.service_id = s.id
+             WHERE b.manicurist_id = ?
+               AND EXTRACT(MONTH FROM b.booking_date) = EXTRACT(MONTH FROM CURRENT_DATE)
+               AND EXTRACT(YEAR FROM b.booking_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+               AND b.status IN ('confirmed', 'completed')`,
+            [id]
+        );
+
+        const totalServices = parseFloat(monthRows[0].total_services) || 0;
+        const manicuristEarnings = Math.round(totalServices * 0.5);
+
+        res.json({
+            success: true,
+            stats: {
+                todayBookings: parseInt(todayRows[0].count, 10) || 0,
+                weekBookings: parseInt(weekRows[0].count, 10) || 0,
+                monthServicesTotal: totalServices,
+                monthEarnings: manicuristEarnings,
+                monthCompletedCount: parseInt(monthRows[0].completed_count, 10) || 0,
+                commissionPercent: 50
+            }
+        });
+    } catch (error) {
+        console.error('Error obteniendo estadísticas de manicurista:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+// ============================================
 // DÍAS BLOQUEADOS (DESCANSO)
 // ============================================
 
@@ -443,7 +507,7 @@ router.get('/:id/unavailable-days', requireSelfOrAdmin, async (req, res) => {
         const { id } = req.params;
         const { from, to } = req.query;
 
-        let query = "SELECT id, manicurist_id, TO_CHAR(unavailable_date, 'YYYY-MM-DD') as unavailable_date, reason, created_at, created_by FROM manicurist_unavailable_days WHERE manicurist_id = ?";
+        let query = "SELECT id, manicurist_id, TO_CHAR(unavailable_date, 'YYYY-MM-DD') as unavailable_date, reason, COALESCE(status, 'approved') as status, reviewed_at, rejection_reason, created_at, created_by FROM manicurist_unavailable_days WHERE manicurist_id = ?";
         const params = [id];
 
         if (from) {
@@ -481,31 +545,57 @@ router.post('/:id/unavailable-days', requireSelfOrAdmin, async (req, res) => {
             [id, date]
         );
         if (bookings.length > 0) {
-            return res.status(400).json({ success: false, error: 'No se puede bloquear un día con citas activas. Cancélalas o reagéndalas primero.' });
+            return res.status(400).json({ success: false, error: 'No se puede solicitar descanso en un día con citas activas. Cancélalas o reagéndalas primero.' });
         }
 
-        // Verificar si el día ya está bloqueado
+        const isAdmin = req.auth.role === 'admin';
+        const targetStatus = isAdmin ? 'approved' : 'pending';
+
+        // Verificar si el día ya fue solicitado o registrado
         const [existing] = await pool.execute(
-            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            'SELECT id, status FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
             [id, date]
         );
+
         if (existing.length > 0) {
-            return res.status(400).json({ success: false, error: 'Este día ya está bloqueado' });
+            const currentStatus = existing[0].status;
+            if (currentStatus === 'rejected') {
+                // Si fue rechazado previamente, permitir re-enviar la solicitud
+                await pool.execute(
+                    `UPDATE manicurist_unavailable_days 
+                     SET status = ?, reason = ?, created_by = ?, rejection_reason = NULL, reviewed_at = NULL, created_at = CURRENT_TIMESTAMP 
+                     WHERE id = ?`,
+                    [targetStatus, reason || null, isAdmin ? 'admin' : 'manicurist', existing[0].id]
+                );
+                return res.json({ 
+                    success: true, 
+                    status: targetStatus,
+                    message: isAdmin ? 'Día de descanso aprobado y bloqueado correctamente' : 'Solicitud enviada al administrador. Queda pendiente de aprobación.' 
+                });
+            } else if (currentStatus === 'pending') {
+                return res.status(400).json({ success: false, error: 'Ya tienes una solicitud de descanso pendiente de aprobación para esta fecha.' });
+            } else {
+                return res.status(400).json({ success: false, error: 'Este día ya está aprobado como día de descanso.' });
+            }
         }
 
         try {
             await pool.execute(
-                'INSERT INTO manicurist_unavailable_days (manicurist_id, unavailable_date, reason, created_by) VALUES (?, ?, ?, ?)',
-                [id, date, reason || null, req.auth.role === 'admin' ? 'admin' : 'manicurist']
+                'INSERT INTO manicurist_unavailable_days (manicurist_id, unavailable_date, reason, created_by, status) VALUES (?, ?, ?, ?, ?)',
+                [id, date, reason || null, isAdmin ? 'admin' : 'manicurist', targetStatus]
             );
         } catch (e) {
             if (e.code === '23505' || e.code === 'ER_DUP_ENTRY' || e.errno === 1062) {
-                return res.status(400).json({ success: false, error: 'Este día ya está bloqueado' });
+                return res.status(400).json({ success: false, error: 'Este día ya está registrado' });
             }
             throw e;
         }
 
-        res.json({ success: true, message: 'Día bloqueado correctamente' });
+        res.json({ 
+            success: true, 
+            status: targetStatus,
+            message: isAdmin ? 'Día de descanso aprobado y bloqueado correctamente' : 'Solicitud enviada al administrador. Queda pendiente de aprobación.' 
+        });
     } catch (error) {
         console.error('Error bloqueando día:', error);
         res.status(500).json({ success: false, error: 'Error del servidor' });

@@ -87,6 +87,10 @@ CREATE TABLE IF NOT EXISTS manicurist_unavailable_days (
     reason            VARCHAR(255),
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by        VARCHAR(50) DEFAULT 'manicurist',
+    status            VARCHAR(20) DEFAULT 'pending',
+    reviewed_by       INT,
+    reviewed_at       TIMESTAMP,
+    rejection_reason  VARCHAR(255),
     UNIQUE(manicurist_id, unavailable_date)
 );
 

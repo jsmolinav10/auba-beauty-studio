@@ -424,4 +424,78 @@ router.put('/manicurists/:id/reset-password', async (req, res) => {
     }
 });
 
+// ============================================
+// SOLICITUDES DE DÍAS DE DESCANSO (MANICURISTAS)
+// ============================================
+
+router.get('/rest-requests', async (req, res) => {
+    try {
+        const pool = req.app.locals.pool;
+        const [rows] = await pool.execute(`
+            SELECT u.id, u.manicurist_id, TO_CHAR(u.unavailable_date, 'YYYY-MM-DD') as unavailable_date,
+                   u.reason, COALESCE(u.status, 'approved') as status, u.created_at, u.reviewed_at,
+                   u.rejection_reason, u.created_by,
+                   m.name as manicurist_name, m.phone as manicurist_phone
+            FROM manicurist_unavailable_days u
+            JOIN manicurists m ON u.manicurist_id = m.id
+            ORDER BY 
+                CASE WHEN u.status = 'pending' THEN 0 ELSE 1 END,
+                u.unavailable_date DESC
+        `);
+        res.json({ success: true, requests: rows });
+    } catch (error) {
+        console.error('Error obteniendo solicitudes de descanso:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+router.put('/rest-requests/:id/approve', async (req, res) => {
+    try {
+        const pool = req.app.locals.pool;
+        const { id } = req.params;
+
+        const [reqRow] = await pool.execute('SELECT * FROM manicurist_unavailable_days WHERE id = ?', [id]);
+        if (reqRow.length === 0) {
+            return res.status(404).json({ success: false, error: 'Solicitud no encontrada' });
+        }
+
+        await pool.execute(
+            `UPDATE manicurist_unavailable_days 
+             SET status = 'approved', reviewed_at = CURRENT_TIMESTAMP, rejection_reason = NULL 
+             WHERE id = ?`,
+            [id]
+        );
+
+        res.json({ success: true, message: 'Día de descanso aprobado exitosamente' });
+    } catch (error) {
+        console.error('Error aprobando solicitud de descanso:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+router.put('/rest-requests/:id/reject', async (req, res) => {
+    try {
+        const pool = req.app.locals.pool;
+        const { id } = req.params;
+        const { reason } = req.body;
+
+        const [reqRow] = await pool.execute('SELECT * FROM manicurist_unavailable_days WHERE id = ?', [id]);
+        if (reqRow.length === 0) {
+            return res.status(404).json({ success: false, error: 'Solicitud no encontrada' });
+        }
+
+        await pool.execute(
+            `UPDATE manicurist_unavailable_days 
+             SET status = 'rejected', reviewed_at = CURRENT_TIMESTAMP, rejection_reason = ? 
+             WHERE id = ?`,
+            [reason || 'No aprobada por la administración', id]
+        );
+
+        res.json({ success: true, message: 'Solicitud de descanso rechazada' });
+    } catch (error) {
+        console.error('Error rechazando solicitud de descanso:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
 module.exports = router;

@@ -234,6 +234,7 @@ const AdminApp = {
 
             // Load upcoming bookings
             this.loadUpcomingBookings();
+            this.loadRestRequests();
         } catch (error) {
             console.error('Error loading stats:', error);
         }
@@ -481,6 +482,9 @@ const AdminApp = {
                     </div>
                 </div>
             `).join('');
+
+            // Also load rest requests table
+            this.loadRestRequests();
         } catch (error) {
             console.error('Error loading manicurists:', error);
         }
@@ -807,6 +811,129 @@ const AdminApp = {
             errorEl.textContent = 'Error de conexión';
             errorEl.classList.remove('hidden');
             successEl.classList.add('hidden');
+        }
+    },
+
+    // ============================================
+    // SOLICITUDES DE DÍAS DE DESCANSO
+    // ============================================
+
+    async loadRestRequests() {
+        try {
+            const response = await this.authFetch(`${this.API_BASE}/admin/rest-requests`);
+            const data = await response.json();
+            const requests = data.requests || [];
+
+            const pendingCount = requests.filter(r => r.status === 'pending').length;
+            const sidebarBadge = document.getElementById('sidebar-rest-badge');
+            const countBadge = document.getElementById('rest-requests-count-badge');
+
+            if (sidebarBadge) {
+                if (pendingCount > 0) {
+                    sidebarBadge.textContent = pendingCount;
+                    sidebarBadge.classList.remove('hidden');
+                } else {
+                    sidebarBadge.classList.add('hidden');
+                }
+            }
+
+            if (countBadge) {
+                countBadge.textContent = `${pendingCount} pendiente${pendingCount === 1 ? '' : 's'}`;
+            }
+
+            const tbody = document.getElementById('rest-requests-tbody');
+            if (!tbody) return;
+
+            if (requests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888; padding: 24px;">No hay solicitudes de descanso registradas</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = requests.map(r => {
+                const [y, m, d] = (r.unavailable_date || '').split('-');
+                const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+                const formattedDate = !isNaN(dateObj) ? dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : r.unavailable_date;
+
+                let statusBadge = '';
+                if (r.status === 'pending') {
+                    statusBadge = '<span class="status-badge" style="background: #FFF3CD; color: #856404; font-weight: 600;">⏳ Pendiente</span>';
+                } else if (r.status === 'approved') {
+                    statusBadge = '<span class="status-badge status-confirmed">✓ Aprobado</span>';
+                } else if (r.status === 'rejected') {
+                    statusBadge = `<span class="status-badge status-cancelled" title="${r.rejection_reason || ''}">✕ Rechazado</span>`;
+                }
+
+                let actions = '';
+                if (r.status === 'pending') {
+                    actions = `
+                        <div style="display: flex; gap: 8px;">
+                            <button class="action-btn-small" style="background: #34C759; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onclick="AdminApp.approveRestRequest(${r.id})">✓ Aprobar</button>
+                            <button class="action-btn-small" style="background: #FF3B30; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;" onclick="AdminApp.rejectRestRequest(${r.id})">✕ Rechazar</button>
+                        </div>
+                    `;
+                } else if (r.status === 'approved') {
+                    actions = `
+                        <button class="action-btn-small" style="background: transparent; color: #FF3B30; border: 1px solid #FF3B30; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;" onclick="AdminApp.rejectRestRequest(${r.id})" title="Revocar aprobación">Deshacer</button>
+                    `;
+                } else {
+                    actions = `<span style="font-size: 12px; color: #888;">${r.rejection_reason || 'Rechazado'}</span>`;
+                }
+
+                return `
+                    <tr>
+                        <td><strong>${r.manicurist_name}</strong></td>
+                        <td>${r.manicurist_phone || '-'}</td>
+                        <td style="font-weight: 600; color: #2C2C3E;">${formattedDate}</td>
+                        <td style="color: #666;">${r.reason || 'Descanso'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${actions}</td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error cargando solicitudes de descanso:', error);
+        }
+    },
+
+    async approveRestRequest(id) {
+        if (!confirm('¿Confirmas que deseas APROBAR este día de descanso para la manicurista?\n\nLas clientas no podrán agendar citas en esa fecha.')) return;
+        try {
+            const response = await this.authFetch(`${this.API_BASE}/admin/rest-requests/${id}/approve`, {
+                method: 'PUT'
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert('Día de descanso aprobado exitosamente');
+                this.loadRestRequests();
+            } else {
+                alert('Error: ' + (result.error || 'No se pudo aprobar'));
+            }
+        } catch (error) {
+            console.error('Error aprobando solicitud:', error);
+            alert('Error de conexión');
+        }
+    },
+
+    async rejectRestRequest(id) {
+        const reason = prompt('Indica el motivo de rechazo (opcional para la manicurista):', 'Necesidad del servicio en esa fecha');
+        if (reason === null) return; // cancelado
+
+        try {
+            const response = await this.authFetch(`${this.API_BASE}/admin/rest-requests/${id}/reject`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason.trim() || 'No aprobado por administración' })
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert('Solicitud de descanso rechazada.');
+                this.loadRestRequests();
+            } else {
+                alert('Error: ' + (result.error || 'No se pudo rechazar'));
+            }
+        } catch (error) {
+            console.error('Error rechazando solicitud:', error);
+            alert('Error de conexión');
         }
     }
 };

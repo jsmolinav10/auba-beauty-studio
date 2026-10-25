@@ -39,9 +39,9 @@ router.get('/availability/:manicuristId/:date', async (req, res) => {
         const pool = req.app.locals.pool;
         const { manicuristId, date } = req.params;
 
-        // Verificar si el día está bloqueado por la manicurista
+        // Verificar si el día está bloqueado por descanso aprobado
         const [blocked] = await pool.execute(
-            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            "SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ? AND COALESCE(status, 'approved') = 'approved'",
             [manicuristId, date]
         );
         if (blocked.length > 0) {
@@ -113,9 +113,9 @@ router.post('/bookings', requireAuth(['user']), async (req, res) => {
             return res.status(400).json({ success: false, error: 'No puedes reservar en una fecha pasada.' });
         }
 
-        // Verificar si el día está bloqueado por la manicurista
+        // Verificar si el día está bloqueado por descanso aprobado
         const [blocked] = await pool.execute(
-            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            "SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ? AND COALESCE(status, 'approved') = 'approved'",
             [manicurist_id, booking_date]
         );
         if (blocked.length > 0) {
@@ -232,9 +232,9 @@ router.put('/bookings/:id/reschedule', requireAuth(['user']), async (req, res) =
             });
         }
 
-        // Verificar si el día está bloqueado por la manicurista
+        // Verificar si el día está bloqueado por descanso aprobado
         const [blocked] = await pool.execute(
-            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            "SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ? AND COALESCE(status, 'approved') = 'approved'",
             [booking.manicurist_id, new_date]
         );
         if (blocked.length > 0) {

@@ -398,6 +398,19 @@
             transform: translateY(-1px);
         }
 
+        .btn-rest-toggle.is-pending {
+            background: #FFF8E1;
+            color: #E65100;
+            border-color: #FFE082;
+            box-shadow: 0 2px 6px rgba(255, 143, 0, 0.12);
+        }
+
+        .btn-rest-toggle.is-pending:hover {
+            background: #FFE082;
+            color: #BF360C;
+            transform: translateY(-1px);
+        }
+
         .agenda-rest-banner {
             background: linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 100%);
             border: 1.5px solid #FFB74D;
@@ -408,6 +421,24 @@
             align-items: center;
             gap: 16px;
             box-shadow: 0 4px 14px rgba(230, 81, 0, 0.08);
+        }
+
+        .agenda-rest-banner.pending-banner {
+            background: linear-gradient(135deg, #FFFDE7 0%, #FFF9C4 100%);
+            border-color: #FBC02D;
+        }
+
+        .agenda-rest-banner.pending-banner h4 {
+            color: #F57F17;
+        }
+
+        .agenda-rest-banner.rejected-banner {
+            background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+            border-color: #EF5350;
+        }
+
+        .agenda-rest-banner.rejected-banner h4 {
+            color: #C62828;
         }
 
         .agenda-rest-banner .rest-icon {
@@ -447,6 +478,116 @@
             height: 4px;
             background: #FF9500;
             border-radius: 50%;
+        }
+
+        .mini-cal-day.pending-day {
+            position: relative;
+            color: #F57F17 !important;
+            font-weight: 700;
+            background-color: #FFFDE7;
+            border-radius: 8px;
+        }
+
+        .mini-cal-day.pending-day::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: #FBC02D;
+            border-radius: 50%;
+        }
+
+        /* Control de Indicadores */
+        .indicators-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .indicator-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .indicator-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(44, 44, 62, 0.1);
+        }
+
+        .indicator-card.highlight {
+            background: linear-gradient(135deg, #FFFFFF 0%, #FFF9F0 100%);
+            border: 1.5px solid rgba(212, 175, 55, 0.4);
+        }
+
+        .indicator-icon {
+            font-size: 26px;
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            background: #F8F8FA;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .indicator-card.highlight .indicator-icon {
+            background: #FFF3D6;
+        }
+
+        .indicator-content {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .indicator-label {
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .indicator-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--color-text-main);
+            margin: 2px 0;
+            line-height: 1.2;
+        }
+
+        .indicator-card.highlight .indicator-value {
+            color: #A07800;
+        }
+
+        .indicator-subtext {
+            font-size: 11px;
+            color: #8C8C9A;
+        }
+
+        @media (max-width: 768px) {
+            .indicators-container {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .indicator-card {
+                padding: 14px 16px;
+            }
+            .indicator-value {
+                font-size: 20px;
+            }
         }
 
         .mini-cal-day.rest-day.selected {
@@ -1101,6 +1242,34 @@
                 </div>
             </div>
 
+            <!-- Control de Indicadores -->
+            <div class="indicators-container">
+                <div class="indicator-card">
+                    <div class="indicator-icon">📅</div>
+                    <div class="indicator-content">
+                        <span class="indicator-label">Citas de Hoy</span>
+                        <span class="indicator-value" id="manicurist-stat-today">0</span>
+                        <span class="indicator-subtext">Citas programadas</span>
+                    </div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-icon">📆</div>
+                    <div class="indicator-content">
+                        <span class="indicator-label">Citas esta Semana</span>
+                        <span class="indicator-value" id="manicurist-stat-week">0</span>
+                        <span class="indicator-subtext">Lunes a domingo</span>
+                    </div>
+                </div>
+                <div class="indicator-card highlight">
+                    <div class="indicator-icon">💰</div>
+                    <div class="indicator-content">
+                        <span class="indicator-label">Mis Ingresos del Mes</span>
+                        <span class="indicator-value" id="manicurist-stat-income">$0</span>
+                        <span class="indicator-subtext" id="manicurist-stat-subtext">50% de ganancia en servicios</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tabs -->
             <div class="tabs">
                 <button class="tab-btn active" data-tab="pending">
@@ -1177,9 +1346,15 @@
                             <div class="mini-cal-grid" id="mini-cal-grid">
                                 <!-- Injected by JS -->
                             </div>
-                            <div class="mini-cal-legend" style="display: flex; align-items: center; gap: 6px; padding: 10px 12px 2px; font-size: 11px; color: #6E6E7A; border-top: 1px solid #F0F0F5; margin-top: 8px;">
-                                <span style="display: inline-block; width: 6px; height: 6px; background: #FF9500; border-radius: 50%;"></span>
-                                <span>Día de descanso</span>
+                            <div class="mini-cal-legend" style="display: flex; align-items: center; gap: 14px; padding: 10px 12px 2px; font-size: 11px; color: #6E6E7A; border-top: 1px solid #F0F0F5; margin-top: 8px;">
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span style="display: inline-block; width: 6px; height: 6px; background: #FF9500; border-radius: 50%;"></span>
+                                    <span>Descanso aprobado</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span style="display: inline-block; width: 6px; height: 6px; background: #FBC02D; border-radius: 50%;"></span>
+                                    <span>Pendiente</span>
+                                </div>
                             </div>
                         </div>
 

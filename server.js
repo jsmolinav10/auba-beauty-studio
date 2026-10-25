@@ -185,9 +185,19 @@ async function initDB() {
                 reason VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_by VARCHAR(50) DEFAULT 'manicurist',
+                status VARCHAR(20) DEFAULT 'pending',
+                reviewed_by INT,
+                reviewed_at TIMESTAMP,
+                rejection_reason VARCHAR(255),
                 UNIQUE(manicurist_id, unavailable_date)
             )`
         );
+        await db.execute('ALTER TABLE manicurist_unavailable_days ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT \'pending\'');
+        await db.execute('ALTER TABLE manicurist_unavailable_days ADD COLUMN IF NOT EXISTS reviewed_by INT');
+        await db.execute('ALTER TABLE manicurist_unavailable_days ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP');
+        await db.execute('ALTER TABLE manicurist_unavailable_days ADD COLUMN IF NOT EXISTS rejection_reason VARCHAR(255)');
+        await db.execute("UPDATE manicurist_unavailable_days SET status = 'approved' WHERE status IS NULL");
+
         await db.execute(
             'CREATE INDEX IF NOT EXISTS idx_manicurist_unavailable_days_mid_date ON manicurist_unavailable_days (manicurist_id, unavailable_date)'
         );

@@ -41,9 +41,10 @@
                 <span class="nav-icon">💅</span>
                 Servicios
             </a>
-            <a href="#" class="nav-item" data-section="manicurists">
+            <a href="#" class="nav-item" data-section="manicurists" style="display: flex; align-items: center;">
                 <span class="nav-icon">👩‍💼</span>
-                Manicuristas
+                <span>Manicuristas</span>
+                <span id="sidebar-rest-badge" class="badge hidden" style="margin-left: auto; background: #FF9500; color: white; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 700;">0</span>
             </a>
             <a href="#" class="nav-item" data-section="users">
                 <span class="nav-icon">👥</span>
@@ -228,6 +229,31 @@
             </div>
             <div class="cards-grid" id="manicurists-grid">
                 <!-- Populated by JS -->
+            </div>
+
+            <!-- Solicitudes de Descanso -->
+            <div class="section-header-row" style="margin-top: 40px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2 style="font-size: 1.3rem;">🏖️ Solicitudes de Días de Descanso</h2>
+                    <span id="rest-requests-count-badge" class="badge" style="background: #FF9500; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;">0 pendientes</span>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="rest-requests-table">
+                    <thead>
+                        <tr>
+                            <th>Manicurista</th>
+                            <th>Teléfono</th>
+                            <th>Fecha de Descanso</th>
+                            <th>Motivo</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rest-requests-tbody">
+                        <tr><td colspan="6" style="text-align: center; color: #888;">Cargando solicitudes...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 

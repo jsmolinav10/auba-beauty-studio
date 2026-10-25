@@ -99,7 +99,8 @@ function showDashboard() {
     miniCalCurrentMonth = { year: today.getFullYear(), month: today.getMonth() };
     selectedDate = todayStr; // keep old variable in sync
 
-    // Load all tabs data
+    // Load all tabs data & performance stats
+    loadPerformanceStats();
     loadPendingBookings();
     loadTodayBookings();
     loadAgendaForDate(todayStr); // new time-grid agenda
@@ -172,8 +173,37 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 });
 
 // =============================================
-// DATA LOADING
+// DATA LOADING & PERFORMANCE STATS
 // =============================================
+
+// Load Performance Stats (Indicadores: hoy, semana, ingresos mes al 50%)
+async function loadPerformanceStats() {
+    if (!currentManicurist || !currentManicurist.id) return;
+    try {
+        const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/stats`, {
+            headers: authHeaders()
+        });
+        const data = await response.json();
+        if (data.success && data.stats) {
+            const stats = data.stats;
+            const todayEl = document.getElementById('manicurist-stat-today');
+            const weekEl = document.getElementById('manicurist-stat-week');
+            const incomeEl = document.getElementById('manicurist-stat-income');
+            const subtextEl = document.getElementById('manicurist-stat-subtext');
+
+            if (todayEl) todayEl.textContent = stats.todayBookings;
+            if (weekEl) weekEl.textContent = stats.weekBookings;
+            if (incomeEl) {
+                incomeEl.textContent = `$${stats.monthEarnings.toLocaleString('es-CO')}`;
+            }
+            if (subtextEl) {
+                subtextEl.textContent = `50% de $${stats.monthServicesTotal.toLocaleString('es-CO')} (${stats.monthCompletedCount} citas)`;
+            }
+        }
+    } catch (err) {
+        console.error('Error cargando indicadores de manicurista:', err);
+    }
+}
 
 // Load Pending Bookings (status = pending)
 async function loadPendingBookings() {
@@ -244,6 +274,7 @@ let agendaCurrentDate   = null; // the date currently shown in the time grid
 let miniCalCurrentMonth = null; // { year, month } of the mini calendar
 let agendaAllBookings   = [];   // cached bookings for the displayed date
 let manicuristUnavailableDays = new Set(); // Cached set of 'YYYY-MM-DD' blocked rest days
+let manicuristUnavailableDaysMap = new Map(); // Map of 'YYYY-MM-DD' -> { status, reason, rejection_reason }
 
 // Fetch all blocked days for this manicurist
 async function loadUnavailableDays() {
@@ -253,14 +284,15 @@ async function loadUnavailableDays() {
             headers: authHeaders()
         });
         const data = await res.json();
+        manicuristUnavailableDays = new Set();
+        manicuristUnavailableDaysMap = new Map();
         if (data.success && Array.isArray(data.days)) {
-            manicuristUnavailableDays = new Set(data.days.map(d => {
+            data.days.forEach(d => {
                 const raw = d.unavailable_date;
-                if (typeof raw === 'string') {
-                    return raw.substring(0, 10);
-                }
-                return getLocalDateISO(new Date(raw));
-            }));
+                const dateStr = typeof raw === 'string' ? raw.substring(0, 10) : getLocalDateISO(new Date(raw));
+                manicuristUnavailableDays.add(dateStr);
+                manicuristUnavailableDaysMap.set(dateStr, d);
+            });
         }
     } catch (err) {
         console.error('Error cargando días bloqueados:', err);
@@ -270,27 +302,37 @@ async function loadUnavailableDays() {
 function updateRestDayButton(date) {
     const btn = document.getElementById('btn-toggle-rest-day');
     if (!btn) return;
-    const isRestDay = manicuristUnavailableDays.has(date);
-    if (isRestDay) {
-        btn.className = 'btn-rest-toggle is-rest';
-        btn.innerHTML = '🏖️ Día de descanso (Desbloquear)';
-        btn.title = 'Haz clic para desbloquear este día y permitir que te agenden citas';
+    const restInfo = manicuristUnavailableDaysMap.get(date);
+    if (restInfo) {
+        if (restInfo.status === 'pending') {
+            btn.className = 'btn-rest-toggle is-pending';
+            btn.innerHTML = '⏳ Descanso pendiente (Cancelar)';
+            btn.title = 'Solicitud de descanso pendiente de aprobación por el administrador. Clic para cancelar.';
+        } else if (restInfo.status === 'approved') {
+            btn.className = 'btn-rest-toggle is-rest';
+            btn.innerHTML = '🏖️ Día de descanso (Desbloquear)';
+            btn.title = 'Aprobado por administración. Haz clic para desbloquear este día y permitir citas.';
+        } else if (restInfo.status === 'rejected') {
+            btn.className = 'btn-rest-toggle is-available';
+            btn.innerHTML = '🏖️ Solicitar descanso (Rechazado)';
+            btn.title = `Rechazado: ${restInfo.rejection_reason || 'Sin motivo'}. Haz clic para solicitar de nuevo.`;
+        }
     } else {
         btn.className = 'btn-rest-toggle is-available';
-        btn.innerHTML = '🏖️ Marcar descanso';
-        btn.title = 'Bloquear este día para que clientas no puedan agendar citas';
+        btn.innerHTML = '🏖️ Solicitar descanso';
+        btn.title = 'Solicitar este día de descanso para aprobación del administrador';
     }
 }
 
 window.toggleCurrentDayRest = async function() {
     if (!agendaCurrentDate || !currentManicurist) return;
-    const isRestDay = manicuristUnavailableDays.has(agendaCurrentDate);
+    const restInfo = manicuristUnavailableDaysMap.get(agendaCurrentDate);
     const [y, m, d] = agendaCurrentDate.split('-').map(Number);
     const dateObj = new Date(y, m - 1, d);
     const formattedDate = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-    if (isRestDay) {
-        if (!confirm(`¿Deseas desbloquear el día ${formattedDate} para volver a permitir citas?`)) {
+    if (restInfo && restInfo.status === 'pending') {
+        if (!confirm(`Tienes una solicitud pendiente de aprobación para el ${formattedDate}.\n\n¿Deseas CANCELAR esta solicitud?`)) {
             return;
         }
 
@@ -302,6 +344,32 @@ window.toggleCurrentDayRest = async function() {
             const data = await res.json();
             if (data.success) {
                 manicuristUnavailableDays.delete(agendaCurrentDate);
+                manicuristUnavailableDaysMap.delete(agendaCurrentDate);
+                await loadAgendaForDate(agendaCurrentDate);
+            } else {
+                alert(data.error || 'No se pudo cancelar la solicitud');
+            }
+        } catch (e) {
+            console.error('Error cancelando solicitud:', e);
+            alert('Error de conexión al cancelar la solicitud');
+        }
+        return;
+    }
+
+    if (restInfo && restInfo.status === 'approved') {
+        if (!confirm(`¿Deseas desbloquear tu día de descanso aprobado para el ${formattedDate} y volver a permitir citas?`)) {
+            return;
+        }
+
+        try {
+            const res = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/unavailable-days/${agendaCurrentDate}`, {
+                method: 'DELETE',
+                headers: authHeaders()
+            });
+            const data = await res.json();
+            if (data.success) {
+                manicuristUnavailableDays.delete(agendaCurrentDate);
+                manicuristUnavailableDaysMap.delete(agendaCurrentDate);
                 await loadAgendaForDate(agendaCurrentDate);
             } else {
                 alert(data.error || 'No se pudo desbloquear el día');
@@ -310,33 +378,40 @@ window.toggleCurrentDayRest = async function() {
             console.error('Error desbloqueando día:', e);
             alert('Error de conexión al desbloquear el día');
         }
-    } else {
-        if (agendaAllBookings && agendaAllBookings.length > 0) {
-            alert(`No puedes marcar el ${formattedDate} como descanso porque ya tienes ${agendaAllBookings.length} cita(s) programada(s). Debes cancelarlas o reagendarlas primero.`);
-            return;
-        }
+        return;
+    }
 
-        if (!confirm(`¿Confirmas que deseas bloquear el ${formattedDate} como tu DÍA DE DESCANSO?\n\nLas clientas no podrán agendar citas para esta fecha.`)) {
-            return;
-        }
+    if (agendaAllBookings && agendaAllBookings.length > 0) {
+        alert(`No puedes solicitar el ${formattedDate} como descanso porque ya tienes ${agendaAllBookings.length} cita(s) programada(s). Debes cancelarlas o reagendarlas primero.`);
+        return;
+    }
 
-        try {
-            const res = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/unavailable-days`, {
-                method: 'POST',
-                headers: authHeaders({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({ date: agendaCurrentDate, reason: 'Descanso' })
+    if (!confirm(`¿Confirmas que deseas solicitar el ${formattedDate} como tu DÍA DE DESCANSO?\n\nTu solicitud será enviada al Administrador para su aprobación.`)) {
+        return;
+    }
+
+    try {
+        const res = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/unavailable-days`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ date: agendaCurrentDate, reason: 'Descanso' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message || 'Solicitud enviada al administrador.');
+            manicuristUnavailableDays.add(agendaCurrentDate);
+            manicuristUnavailableDaysMap.set(agendaCurrentDate, {
+                status: data.status || 'pending',
+                unavailable_date: agendaCurrentDate,
+                reason: 'Descanso'
             });
-            const data = await res.json();
-            if (data.success) {
-                manicuristUnavailableDays.add(agendaCurrentDate);
-                await loadAgendaForDate(agendaCurrentDate);
-            } else {
-                alert(data.error || 'No se pudo bloquear el día');
-            }
-        } catch (e) {
-            console.error('Error bloqueando día:', e);
-            alert('Error de conexión al bloquear el día');
+            await loadAgendaForDate(agendaCurrentDate);
+        } else {
+            alert(data.error || 'No se pudo registrar la solicitud');
         }
+    } catch (e) {
+        console.error('Error solicitando descanso:', e);
+        alert('Error de conexión al solicitar el descanso');
     }
 };
 
@@ -421,23 +496,45 @@ function renderTimeGridSkeleton() {
 function renderTimeGrid(bookings) {
     renderTimeGridSkeleton(); // redraw rows cleanly
     const body = document.getElementById('time-grid-body');
-    const isRestDay = manicuristUnavailableDays.has(agendaCurrentDate);
+    const restInfo = manicuristUnavailableDaysMap.get(agendaCurrentDate);
 
-    if (isRestDay) {
+    if (restInfo) {
         const banner = document.createElement('div');
-        banner.className = 'agenda-rest-banner';
-        banner.innerHTML = `
-            <div class="rest-icon">🏖️</div>
-            <div>
-                <h4>Día de Descanso Programado</h4>
-                <p>Este día está marcado como tu día de descanso. El sistema no permite que las clientas agenden citas en esta fecha.</p>
-            </div>
-        `;
-        body.prepend(banner);
+        if (restInfo.status === 'pending') {
+            banner.className = 'agenda-rest-banner pending-banner';
+            banner.innerHTML = `
+                <div class="rest-icon">⏳</div>
+                <div>
+                    <h4>Solicitud de Descanso en Revisión</h4>
+                    <p>Has solicitado este día como descanso. El administrador debe aprobar tu solicitud antes de bloquear oficialmente las citas.</p>
+                </div>
+            `;
+            body.prepend(banner);
+        } else if (restInfo.status === 'approved') {
+            banner.className = 'agenda-rest-banner';
+            banner.innerHTML = `
+                <div class="rest-icon">🏖️</div>
+                <div>
+                    <h4>Día de Descanso Aprobado</h4>
+                    <p>Este día está aprobado como tu día de descanso por el administrador. El sistema no permite que las clientas agenden citas en esta fecha.</p>
+                </div>
+            `;
+            body.prepend(banner);
+        } else if (restInfo.status === 'rejected') {
+            banner.className = 'agenda-rest-banner rejected-banner';
+            banner.innerHTML = `
+                <div class="rest-icon">❌</div>
+                <div>
+                    <h4>Solicitud de Descanso Rechazada</h4>
+                    <p>Motivo: ${restInfo.rejection_reason || 'No aprobada por administración'}. Puedes solicitar otra fecha si lo requieres.</p>
+                </div>
+            `;
+            body.prepend(banner);
+        }
     }
 
     if (!bookings || bookings.length === 0) {
-        if (!isRestDay) {
+        if (!restInfo || restInfo.status === 'rejected') {
             const empty = document.createElement('div');
             empty.className = 'agenda-empty-state';
             empty.innerHTML = '<p>📭 Sin citas para este día</p>';
@@ -528,12 +625,17 @@ function renderMiniMonthCal() {
     // Current month days
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const isRestDay = manicuristUnavailableDays.has(dateStr);
+        const restInfo = manicuristUnavailableDaysMap.get(dateStr);
+        let restClass = '';
+        if (restInfo) {
+            if (restInfo.status === 'approved') restClass = 'rest-day';
+            else if (restInfo.status === 'pending') restClass = 'pending-day';
+        }
         const classes = [
             'mini-cal-day',
             dateStr === todayStr ? 'today' : '',
             dateStr === agendaCurrentDate ? 'selected' : '',
-            isRestDay ? 'rest-day' : ''
+            restClass
         ].filter(Boolean).join(' ');
         html += `<div class="${classes}" onclick="selectAgendaDate('${dateStr}')">${d}</div>`;
     }
@@ -861,6 +963,7 @@ function attachActionListeners() {
 
 // Helper to refresh all views
 function refreshAllViews() {
+    loadPerformanceStats();
     loadPendingBookings();
     loadTodayBookings();
     if (selectedDate) {
