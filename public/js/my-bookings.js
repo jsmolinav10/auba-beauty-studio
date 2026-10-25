@@ -309,6 +309,10 @@ async function loadAvailableTimes(dateStr) {
     try {
         const response = await fetch(`${API_BASE}/availability/${rescheduleData.manicuristId}/${dateStr}`);
         const data = await response.json();
+        if (data.blocked) {
+            container.innerHTML = '<p style="color: #c97a7e; grid-column: 1 / -1; text-align: center; font-weight: 500; padding: 1rem;">🏖️ Este día es de descanso para la manicurista. Por favor selecciona otra fecha.</p>';
+            return;
+        }
         rescheduleData.occupiedSlots = data.occupiedSlots || [];
 
         renderAvailableTimes();

@@ -404,7 +404,7 @@ router.post('/:id/bookings', requireSelfOrAdmin, async (req, res) => {
              WHERE b.manicurist_id = ? AND b.booking_date = ? AND b.status != 'cancelled'
                AND ?::time < (b.booking_time + (s.duration || ' minutes')::interval)
                AND (?::time + (?::int || ' minutes')::interval) > b.booking_time`,
-            [id, booking_date, booking_time, serviceDuration, booking_time, serviceDuration]
+            [id, booking_date, booking_time, booking_time, serviceDuration]
         );
 
         if (existing.length > 0) {
@@ -484,13 +484,22 @@ router.post('/:id/unavailable-days', requireSelfOrAdmin, async (req, res) => {
             return res.status(400).json({ success: false, error: 'No se puede bloquear un día con citas activas. Cancélalas o reagéndalas primero.' });
         }
 
+        // Verificar si el día ya está bloqueado
+        const [existing] = await pool.execute(
+            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            [id, date]
+        );
+        if (existing.length > 0) {
+            return res.status(400).json({ success: false, error: 'Este día ya está bloqueado' });
+        }
+
         try {
             await pool.execute(
                 'INSERT INTO manicurist_unavailable_days (manicurist_id, unavailable_date, reason, created_by) VALUES (?, ?, ?, ?)',
                 [id, date, reason || null, req.auth.role === 'admin' ? 'admin' : 'manicurist']
             );
         } catch (e) {
-            if (e.code === 'ER_DUP_ENTRY' || e.errno === 1062) {
+            if (e.code === '23505' || e.code === 'ER_DUP_ENTRY' || e.errno === 1062) {
                 return res.status(400).json({ success: false, error: 'Este día ya está bloqueado' });
             }
             throw e;

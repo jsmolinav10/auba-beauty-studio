@@ -131,7 +131,7 @@ router.post('/bookings', requireAuth(['user']), async (req, res) => {
                AND b.status != 'cancelled'
                AND ?::time < (b.booking_time + (s.duration || ' minutes')::interval)
                AND (?::time + (?::int || ' minutes')::interval) > b.booking_time`,
-            [manicurist_id, booking_date, booking_time, serviceDuration, booking_time, serviceDuration]
+            [manicurist_id, booking_date, booking_time, booking_time, serviceDuration]
         );
 
         if (existing.length > 0) {
@@ -252,7 +252,7 @@ router.put('/bookings/:id/reschedule', requireAuth(['user']), async (req, res) =
                AND b.id != ?
                AND ?::time < (b.booking_time + (s.duration || ' minutes')::interval)
                AND (?::time + (?::int || ' minutes')::interval) > b.booking_time`,
-            [booking.manicurist_id, new_date, id, new_time, serviceDuration, new_time, serviceDuration]
+            [booking.manicurist_id, new_date, id, new_time, new_time, serviceDuration]
         );
 
         if (conflicts.length > 0) {

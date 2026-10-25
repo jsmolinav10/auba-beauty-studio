@@ -174,10 +174,11 @@ async function runComprehensiveValidation() {
         const res = await request('GET', '/api/services');
         const valid = res.status === 200 && Array.isArray(res.json) && res.json.length > 0;
         if (valid) {
-            targetServiceId = res.json[0].id;
+            const service120 = res.json.find(s => Number(s.duration) >= 120) || res.json[0];
+            targetServiceId = service120.id;
             const first = res.json[0];
             const hasFields = first.title && first.price && first.duration;
-            return { pass: Boolean(hasFields), reason: `Servicios obtenidos: ${res.json.length}` };
+            return { pass: Boolean(hasFields), reason: `Servicios obtenidos: ${res.json.length} (target: ${service120.title} ${service120.duration}m)` };
         }
         return { pass: false, reason: `Status: ${res.status}` };
     });
@@ -438,6 +439,32 @@ async function runComprehensiveValidation() {
         return { pass, reason: `Cliente existente detectado con ID: ${res.json?.client?.id}` };
     });
 
+    const testRestDate = '2026-11-28';
+    await test('MANICURIST_PORTAL', 'Bloquear día de descanso para la manicurista', async () => {
+        if (!adminJwtToken) return { skip: true, reason: 'Requiere token de sesión autorizado' };
+        const res = await request('POST', `/api/manicurists/${targetManicuristId || 1}/unavailable-days`, {
+            date: testRestDate,
+            reason: 'Descanso Test'
+        }, {
+            'Authorization': `Bearer ${adminJwtToken}`
+        });
+        return { pass: res.status === 200 && res.json && res.json.success, reason: res.json?.message };
+    });
+
+    await test('MANICURIST_PORTAL', 'Verificar que día de descanso aparece bloqueado en disponibilidad pública', async () => {
+        const res = await request('GET', `/api/availability/${targetManicuristId || 1}/${testRestDate}`);
+        const pass = res.status === 200 && res.json && res.json.blocked === true;
+        return { pass, reason: `Blocked: ${res.json?.blocked}` };
+    });
+
+    await test('MANICURIST_PORTAL', 'Desbloquear día de descanso', async () => {
+        if (!adminJwtToken) return { skip: true, reason: 'Requiere token de sesión autorizado' };
+        const res = await request('DELETE', `/api/manicurists/${targetManicuristId || 1}/unavailable-days/${testRestDate}`, null, {
+            'Authorization': `Bearer ${adminJwtToken}`
+        });
+        return { pass: res.status === 200 && res.json && res.json.success, reason: res.json?.message };
+    });
+
     // ============================================================
     // MÓDULO 7: PAGOS Y CONFIGURACIÓN NEQUI
     // ============================================================
@@ -655,6 +682,12 @@ async function runComprehensiveValidation() {
     // ============================================================
     console.log('\n--- 🧹 LIMPIEZA DE DATOS TEMPORALES DE PRUEBA ---');
     try {
+        if (registeredUserId) {
+            await db.execute('DELETE FROM bookings WHERE user_id = ?', [registeredUserId]);
+        }
+        if (expressTestClientId) {
+            await db.execute('DELETE FROM bookings WHERE user_id = ?', [expressTestClientId]);
+        }
         if (createdBookingId) {
             await db.execute('DELETE FROM bookings WHERE id = ?', [createdBookingId]);
             console.log(`  🔹 Reserva temporal #${createdBookingId} eliminada`);

@@ -309,6 +309,101 @@
             margin: 2px auto 0;
         }
 
+        /* Rest Day Toggle Button & Indicators */
+        .btn-rest-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .btn-rest-toggle.is-available {
+            background: #FFF9E6;
+            color: #A07800;
+            border-color: #FFE082;
+        }
+
+        .btn-rest-toggle.is-available:hover {
+            background: #FFE082;
+            color: #6D5100;
+            transform: translateY(-1px);
+        }
+
+        .btn-rest-toggle.is-rest {
+            background: #FFF0F0;
+            color: #D32F2F;
+            border-color: #FFCDD2;
+            box-shadow: 0 2px 6px rgba(211, 47, 47, 0.1);
+        }
+
+        .btn-rest-toggle.is-rest:hover {
+            background: #FFCDD2;
+            color: #B71C1C;
+            transform: translateY(-1px);
+        }
+
+        .agenda-rest-banner {
+            background: linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 100%);
+            border: 1.5px solid #FFB74D;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 16px 16px 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 14px rgba(230, 81, 0, 0.08);
+        }
+
+        .agenda-rest-banner .rest-icon {
+            font-size: 36px;
+            line-height: 1;
+        }
+
+        .agenda-rest-banner h4 {
+            margin: 0 0 6px 0;
+            font-size: 15px;
+            color: #E65100;
+            font-weight: 700;
+        }
+
+        .agenda-rest-banner p {
+            margin: 0;
+            font-size: 13px;
+            color: #5D4037;
+            line-height: 1.4;
+        }
+
+        .mini-cal-day.rest-day {
+            position: relative;
+            color: #E65100 !important;
+            font-weight: 700;
+            background-color: #FFF3E0;
+            border-radius: 8px;
+        }
+
+        .mini-cal-day.rest-day::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: #FF9500;
+            border-radius: 50%;
+        }
+
+        .mini-cal-day.rest-day.selected {
+            background: #FFE082 !important;
+            color: #8D6300 !important;
+        }
+
         /* Next appointments card */
         .next-appts-card {
             background: white;
@@ -1010,7 +1105,9 @@
                                 <span class="agenda-date-label" id="agenda-date-label">Hoy</span>
                                 <button class="agenda-nav-btn" onclick="agendaNavigate(1)">&#8250;</button>
                             </div>
-                            <h3 id="agenda-section-title">Mi Agenda</h3>
+                            <div class="agenda-actions-header" style="display: flex; align-items: center; gap: 10px;">
+                                <button id="btn-toggle-rest-day" class="btn-rest-toggle is-available" onclick="toggleCurrentDayRest()">🏖️ Marcar descanso</button>
+                            </div>
                         </div>
                         <div class="time-grid" id="time-grid-body">
                             <!-- Rows injected by JS -->
@@ -1029,6 +1126,10 @@
                             </div>
                             <div class="mini-cal-grid" id="mini-cal-grid">
                                 <!-- Injected by JS -->
+                            </div>
+                            <div class="mini-cal-legend" style="display: flex; align-items: center; gap: 6px; padding: 10px 12px 2px; font-size: 11px; color: #6E6E7A; border-top: 1px solid #F0F0F5; margin-top: 8px;">
+                                <span style="display: inline-block; width: 6px; height: 6px; background: #FF9500; border-radius: 50%;"></span>
+                                <span>Día de descanso</span>
                             </div>
                         </div>
 
