@@ -39,17 +39,29 @@ router.get('/availability/:manicuristId/:date', async (req, res) => {
         const pool = req.app.locals.pool;
         const { manicuristId, date } = req.params;
 
+        // Verificar si el día está bloqueado por la manicurista
+        const [blocked] = await pool.execute(
+            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            [manicuristId, date]
+        );
+        if (blocked.length > 0) {
+            return res.json({ occupiedSlots: [], blocked: true });
+        }
+
         const [bookings] = await pool.execute(
-            'SELECT booking_time, service_id FROM bookings WHERE manicurist_id = ? AND booking_date = ? AND status != \'cancelled\'',
+            `SELECT b.booking_time, s.duration 
+             FROM bookings b 
+             JOIN services s ON b.service_id = s.id 
+             WHERE b.manicurist_id = ? AND b.booking_date = ? AND b.status != 'cancelled'`,
             [manicuristId, date]
         );
 
         const occupiedSlots = bookings.map(b => ({
             start: b.booking_time,
-            duration: 120
+            duration: b.duration
         }));
 
-        res.json({ occupiedSlots });
+        res.json({ occupiedSlots, blocked: false });
     } catch (error) {
         console.error('Error checking availability:', error);
         res.status(500).json({ error: 'Error del servidor' });
@@ -87,10 +99,11 @@ router.post('/bookings', requireAuth(['user']), async (req, res) => {
             return res.status(400).json({ success: false, error: 'La especialista seleccionada no está disponible' });
         }
 
-        const [services] = await pool.execute('SELECT id FROM services WHERE id = ?', [service_id]);
+        const [services] = await pool.execute('SELECT id, duration FROM services WHERE id = ?', [service_id]);
         if (services.length === 0) {
             return res.status(400).json({ success: false, error: 'El servicio seleccionado no existe' });
         }
+        const serviceDuration = services[0].duration;
 
         // Validar fecha no pasada
         const today = new Date();
@@ -100,15 +113,25 @@ router.post('/bookings', requireAuth(['user']), async (req, res) => {
             return res.status(400).json({ success: false, error: 'No puedes reservar en una fecha pasada.' });
         }
 
-        // Validar conflicto de horario
-        // FIX: ?::TIME rompía la parametrización en db.js. Usamos EXTRACT(EPOCH) para comparar.
+        // Verificar si el día está bloqueado por la manicurista
+        const [blocked] = await pool.execute(
+            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            [manicurist_id, booking_date]
+        );
+        if (blocked.length > 0) {
+            return res.status(400).json({ success: false, error: 'La manicurista no tiene disponibilidad este día.' });
+        }
+
+        // Validar conflicto de horario por intervalo real
         const [existing] = await pool.execute(
-            `SELECT id FROM bookings
-             WHERE manicurist_id = ?
-             AND booking_date = ?
-             AND status != 'cancelled'
-             AND ABS(EXTRACT(EPOCH FROM (booking_time - ?::TIME)) / 3600) < 2`,
-            [manicurist_id, booking_date, booking_time]
+            `SELECT b.id FROM bookings b
+             JOIN services s ON b.service_id = s.id
+             WHERE b.manicurist_id = ?
+               AND b.booking_date = ?
+               AND b.status != 'cancelled'
+               AND ?::time < (b.booking_time + (s.duration || ' minutes')::interval)
+               AND (?::time + (?::int || ' minutes')::interval) > b.booking_time`,
+            [manicurist_id, booking_date, booking_time, serviceDuration, booking_time, serviceDuration]
         );
 
         if (existing.length > 0) {
@@ -181,7 +204,10 @@ router.put('/bookings/:id/reschedule', requireAuth(['user']), async (req, res) =
         const user_id = req.auth.userId;
 
         const [bookings] = await pool.execute(
-            'SELECT id, booking_date, booking_time, manicurist_id, status FROM bookings WHERE id = ? AND user_id = ?',
+            `SELECT b.id, b.booking_date, b.booking_time, b.manicurist_id, b.status, b.service_id, s.duration
+             FROM bookings b
+             JOIN services s ON b.service_id = s.id
+             WHERE b.id = ? AND b.user_id = ?`,
             [id, user_id]
         );
 
@@ -206,15 +232,27 @@ router.put('/bookings/:id/reschedule', requireAuth(['user']), async (req, res) =
             });
         }
 
-        // FIX: ?::TIME rompía la parametrización en db.js. Usamos EXTRACT(EPOCH) para comparar.
+        // Verificar si el día está bloqueado por la manicurista
+        const [blocked] = await pool.execute(
+            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            [booking.manicurist_id, new_date]
+        );
+        if (blocked.length > 0) {
+            return res.status(400).json({ success: false, error: 'La manicurista no tiene disponibilidad este día.' });
+        }
+
+        // Validación por intervalo real
+        const serviceDuration = booking.duration || 60;
         const [conflicts] = await pool.execute(
-            `SELECT id FROM bookings 
-             WHERE manicurist_id = ? 
-             AND booking_date = ? 
-             AND status NOT IN ('cancelled', 'no_show')
-             AND id != ?
-             AND ABS(EXTRACT(EPOCH FROM (booking_time - ?::TIME)) / 3600) < 2`,
-            [booking.manicurist_id, new_date, id, new_time]
+            `SELECT b.id FROM bookings b
+             JOIN services s ON b.service_id = s.id
+             WHERE b.manicurist_id = ? 
+               AND b.booking_date = ? 
+               AND b.status NOT IN ('cancelled', 'no_show')
+               AND b.id != ?
+               AND ?::time < (b.booking_time + (s.duration || ' minutes')::interval)
+               AND (?::time + (?::int || ' minutes')::interval) > b.booking_time`,
+            [booking.manicurist_id, new_date, id, new_time, serviceDuration, new_time, serviceDuration]
         );
 
         if (conflicts.length > 0) {

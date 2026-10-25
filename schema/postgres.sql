@@ -78,6 +78,19 @@ CREATE TABLE IF NOT EXISTS bookings (
 );
 
 -- ============================================
+-- DÍAS BLOQUEADOS POR MANICURISTA (DÍA DE DESCANSO)
+-- ============================================
+CREATE TABLE IF NOT EXISTS manicurist_unavailable_days (
+    id                SERIAL PRIMARY KEY,
+    manicurist_id     INT NOT NULL REFERENCES manicurists(id) ON DELETE CASCADE,
+    unavailable_date  DATE NOT NULL,
+    reason            VARCHAR(255),
+    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by        VARCHAR(50) DEFAULT 'manicurist',
+    UNIQUE(manicurist_id, unavailable_date)
+);
+
+-- ============================================
 -- ÍNDICES
 -- ============================================
 -- Las consultas más frecuentes son la agenda por fecha, el historial de una
@@ -90,6 +103,9 @@ CREATE INDEX IF NOT EXISTS idx_bookings_user
 
 CREATE INDEX IF NOT EXISTS idx_bookings_date_status
     ON bookings (booking_date, status);
+
+CREATE INDEX IF NOT EXISTS idx_manicurist_unavailable_days_mid_date
+    ON manicurist_unavailable_days (manicurist_id, unavailable_date);
 
 -- Búsqueda de clientas desde el portal de manicuristas (ILIKE '%texto%').
 -- Un índice funcional acelera esa consulta sin penalizar las demás.

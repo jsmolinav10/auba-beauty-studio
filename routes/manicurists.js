@@ -280,29 +280,53 @@ router.get('/:id/available-times', requireSelfOrAdmin, async (req, res) => {
             return res.status(400).json({ success: false, error: 'Fecha requerida' });
         }
 
+        // Verificar si el día está bloqueado
+        const [blocked] = await pool.execute(
+            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            [id, date]
+        );
+        if (blocked.length > 0) {
+            return res.json({ success: true, times: [], blocked: true });
+        }
+
         const [existing] = await pool.execute(
-            `SELECT booking_time FROM bookings 
-             WHERE manicurist_id = ? AND booking_date = ? AND status != 'cancelled'`,
+            `SELECT b.booking_time, s.duration 
+             FROM bookings b 
+             JOIN services s ON b.service_id = s.id
+             WHERE b.manicurist_id = ? AND b.booking_date = ? AND b.status != 'cancelled'`,
             [id, date]
         );
 
-        const bookedTimes = existing.map(b => b.booking_time.substring(0, 5));
-
         const allSlots = [];
         for (let h = 9; h <= 18; h++) {
-            const time = `${h.toString().padStart(2, '0')}:00`;
-            allSlots.push(time);
+            allSlots.push(`${h.toString().padStart(2, '0')}:00`);
+            if (h < 18) {
+                allSlots.push(`${h.toString().padStart(2, '0')}:30`);
+            }
         }
 
+        const toMinutes = (timeStr) => {
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+
         const available = allSlots.filter(slot => {
-            const slotHour = parseInt(slot.split(':')[0]);
-            return !bookedTimes.some(bt => {
-                const bookedHour = parseInt(bt.split(':')[0]);
-                return Math.abs(slotHour - bookedHour) < 2;
+            const slotStart = toMinutes(slot);
+            // No permitir slots que terminen después de 18:00 con duración desconocida; usar duración mínima 30? pero mejor filtrar solo por solapes
+            // Verificar solapes con citas existentes
+            const isOverlapping = existing.some(b => {
+                const bookedStart = toMinutes(b.booking_time.substring(0, 5));
+                const bookedEnd = bookedStart + (b.duration || 60);
+                const slotEnd = slotStart + 60; // asumimos slot base 60 para filtrado, pero validación real será con duración del servicio
+                return slotStart < bookedEnd && slotEnd > bookedStart;
             });
+            if (isOverlapping) return false;
+            // No permitir si empieza después de las 18:00? rango hasta 18:00
+            if (slotStart >= 18 * 60) return false;
+            return true;
         });
 
-        res.json({ success: true, times: available });
+        res.json({ success: true, times: available, blocked: false });
     } catch (error) {
         console.error('Error obteniendo horarios:', error);
         res.status(500).json({ success: false, error: 'Error del servidor' });
@@ -352,6 +376,12 @@ router.post('/:id/bookings', requireSelfOrAdmin, async (req, res) => {
             return res.status(404).json({ success: false, error: 'Clienta no registrada' });
         }
 
+        const [services] = await pool.execute('SELECT id, duration FROM services WHERE id = ?', [service_id]);
+        if (services.length === 0) {
+            return res.status(400).json({ success: false, error: 'El servicio seleccionado no existe' });
+        }
+        const serviceDuration = services[0].duration;
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const bookDate = new Date(booking_date + 'T00:00:00');
@@ -359,11 +389,22 @@ router.post('/:id/bookings', requireSelfOrAdmin, async (req, res) => {
             return res.status(400).json({ success: false, error: 'No se puede agendar en fecha pasada' });
         }
 
+        // Verificar si el día está bloqueado
+        const [blocked] = await pool.execute(
+            'SELECT id FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            [id, booking_date]
+        );
+        if (blocked.length > 0) {
+            return res.status(400).json({ success: false, error: 'La manicurista no tiene disponibilidad este día.' });
+        }
+
         const [existing] = await pool.execute(
-            `SELECT id FROM bookings 
-             WHERE manicurist_id = ? AND booking_date = ? AND status != 'cancelled'
-             AND ABS(EXTRACT(EPOCH FROM (booking_time - ?::TIME)) / 3600) < 2`,
-            [id, booking_date, booking_time]
+            `SELECT b.id FROM bookings b
+             JOIN services s ON b.service_id = s.id
+             WHERE b.manicurist_id = ? AND b.booking_date = ? AND b.status != 'cancelled'
+               AND ?::time < (b.booking_time + (s.duration || ' minutes')::interval)
+               AND (?::time + (?::int || ' minutes')::interval) > b.booking_time`,
+            [id, booking_date, booking_time, serviceDuration, booking_time, serviceDuration]
         );
 
         if (existing.length > 0) {
@@ -392,39 +433,89 @@ router.post('/:id/bookings', requireSelfOrAdmin, async (req, res) => {
 // CAMBIAR CONTRASEÑA
 // ============================================
 
-router.put('/:id/change-password', requireSelfOrAdmin, async (req, res) => {
+// ============================================
+// DÍAS BLOQUEADOS (DESCANSO)
+// ============================================
+
+router.get('/:id/unavailable-days', requireSelfOrAdmin, async (req, res) => {
     try {
         const pool = req.app.locals.pool;
         const { id } = req.params;
-        const { currentPassword, newPassword } = req.body;
+        const { from, to } = req.query;
 
-        if (!newPassword || newPassword.length < 8) {
-            return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 8 caracteres' });
-        }
-        if (!currentPassword) {
-            return res.status(400).json({ success: false, error: 'Debes confirmar tu contraseña actual' });
-        }
+        let query = 'SELECT id, manicurist_id, unavailable_date, reason, created_at, created_by FROM manicurist_unavailable_days WHERE manicurist_id = ?';
+        const params = [id];
 
-        const [rows] = await pool.execute('SELECT password FROM manicurists WHERE id = ?', [id]);
-        if (rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'Manicurista no encontrada' });
+        if (from) {
+            query += ' AND unavailable_date >= ?';
+            params.push(from);
         }
-
-        const matches = await bcrypt.compare(currentPassword, rows[0].password);
-        if (!matches) {
-            return res.status(401).json({ success: false, error: 'La contraseña actual no es correcta' });
+        if (to) {
+            query += ' AND unavailable_date <= ?';
+            params.push(to);
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        query += ' ORDER BY unavailable_date ASC';
+
+        const [rows] = await pool.execute(query, params);
+        res.json({ success: true, days: rows });
+    } catch (error) {
+        console.error('Error obteniendo días bloqueados:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+router.post('/:id/unavailable-days', requireSelfOrAdmin, async (req, res) => {
+    try {
+        const pool = req.app.locals.pool;
+        const { id } = req.params;
+        const { date, reason } = req.body;
+
+        if (!date) {
+            return res.status(400).json({ success: false, error: 'Fecha requerida' });
+        }
+
+        // Verificar que no haya citas activas ese día
+        const [bookings] = await pool.execute(
+            `SELECT id FROM bookings WHERE manicurist_id = ? AND booking_date = ? AND status != 'cancelled' LIMIT 1`,
+            [id, date]
+        );
+        if (bookings.length > 0) {
+            return res.status(400).json({ success: false, error: 'No se puede bloquear un día con citas activas. Cancélalas o reagéndalas primero.' });
+        }
+
+        try {
+            await pool.execute(
+                'INSERT INTO manicurist_unavailable_days (manicurist_id, unavailable_date, reason, created_by) VALUES (?, ?, ?, ?)',
+                [id, date, reason || null, req.auth.role === 'admin' ? 'admin' : 'manicurist']
+            );
+        } catch (e) {
+            if (e.code === 'ER_DUP_ENTRY' || e.errno === 1062) {
+                return res.status(400).json({ success: false, error: 'Este día ya está bloqueado' });
+            }
+            throw e;
+        }
+
+        res.json({ success: true, message: 'Día bloqueado correctamente' });
+    } catch (error) {
+        console.error('Error bloqueando día:', error);
+        res.status(500).json({ success: false, error: 'Error del servidor' });
+    }
+});
+
+router.delete('/:id/unavailable-days/:date', requireSelfOrAdmin, async (req, res) => {
+    try {
+        const pool = req.app.locals.pool;
+        const { id, date } = req.params;
 
         await pool.execute(
-            'UPDATE manicurists SET password = ? WHERE id = ?',
-            [hashedPassword, id]
+            'DELETE FROM manicurist_unavailable_days WHERE manicurist_id = ? AND unavailable_date = ?',
+            [id, date]
         );
 
-        res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+        res.json({ success: true, message: 'Día desbloqueado correctamente' });
     } catch (error) {
-        console.error('Error cambiando contraseña de manicurista:', error.message);
+        console.error('Error desbloqueando día:', error);
         res.status(500).json({ success: false, error: 'Error del servidor' });
     }
 });

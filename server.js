@@ -176,16 +176,20 @@ async function initDB() {
         // Add id column if table was created without it in a prior migration
         await db.execute('ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS id SERIAL');
 
-        // Default manicurist security question/answer
+        // Ensure manicurist_unavailable_days table exists (idempotent)
         await db.execute(
-            "INSERT INTO app_settings (setting_key, setting_value, description) " +
-            "VALUES ('manicurist_security_question', '¿Cuál es el nombre del estudio?', 'Pregunta de seguridad para acceder al portal de manicuristas') " +
-            "ON CONFLICT (setting_key) DO NOTHING"
+            `CREATE TABLE IF NOT EXISTS manicurist_unavailable_days (
+                id SERIAL PRIMARY KEY,
+                manicurist_id INT NOT NULL REFERENCES manicurists(id) ON DELETE CASCADE,
+                unavailable_date DATE NOT NULL,
+                reason VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_by VARCHAR(50) DEFAULT 'manicurist',
+                UNIQUE(manicurist_id, unavailable_date)
+            )`
         );
         await db.execute(
-            "INSERT INTO app_settings (setting_key, setting_value, description) " +
-            "VALUES ('manicurist_security_answer', 'auba', 'Respuesta de seguridad para acceder al portal de manicuristas') " +
-            "ON CONFLICT (setting_key) DO NOTHING"
+            'CREATE INDEX IF NOT EXISTS idx_manicurist_unavailable_days_mid_date ON manicurist_unavailable_days (manicurist_id, unavailable_date)'
         );
 
         console.log('✅ Conectado a Supabase PostgreSQL');

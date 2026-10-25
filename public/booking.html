@@ -1262,10 +1262,17 @@
         const SESSION_KEY = 'auba_current_user';
         const TOKEN_KEY = 'auba_auth_token';
 
-        const TIME_SLOTS = [
-            "09:00", "10:00", "11:00", "12:00",
-            "14:00", "15:00", "16:00", "17:00", "18:00"
-        ];
+        const TIME_SLOTS = [];
+        function generateTimeSlots() {
+            const slots = [];
+            for (let h = 9; h < 18; h++) {
+                slots.push(`${h.toString().padStart(2, '0')}:00`);
+                slots.push(`${h.toString().padStart(2, '0')}:30`);
+            }
+            slots.push('18:00');
+            return slots;
+        }
+        const GENERATED_TIME_SLOTS = generateTimeSlots();
 
         // ===========================================
         // STATE
@@ -1553,7 +1560,7 @@
             const container = document.getElementById('time-slots');
 
             // Check how many slots are available
-            const availableSlots = TIME_SLOTS.filter(time => !isTimeOccupied(time));
+            const availableSlots = GENERATED_TIME_SLOTS.filter(time => !isTimeOccupied(time));
 
             // If no slots available, show message with back button
             if (availableSlots.length === 0) {
@@ -1568,13 +1575,13 @@
                 return;
             }
 
-            container.innerHTML = TIME_SLOTS.map(time => {
+            container.innerHTML = GENERATED_TIME_SLOTS.map(time => {
                 const isOccupied = isTimeOccupied(time);
                 const classes = ['time-slot'];
                 if (isOccupied) classes.push('unavailable');
 
                 return `
-                    <div class="${classes.join(' ')}" data-time="${time}" ${isOccupied ? '' : ''}>
+                    <div class="${classes.join(' ')}" data-time="${time}">
                         ${time}
                     </div>
                 `;
@@ -1593,9 +1600,9 @@
 
             for (const occupied of occupiedSlots) {
                 const occupiedStart = timeToMinutes(occupied.start.substring(0, 5));
-                const occupiedEnd = occupiedStart + occupied.duration;
+                const occupiedEnd = occupiedStart + (occupied.duration || 60);
 
-                // Check if there's overlap (assuming service takes 2 hours as per server logic)
+                // Check if there's overlap
                 if (timeMinutes >= occupiedStart && timeMinutes < occupiedEnd) {
                     return true;
                 }
@@ -1608,8 +1615,8 @@
                 }
             }
 
-            // Check if there's enough time before closing (18:00 = 1080 minutes is last slot, work ends at 20:00 = 1200)
-            const closingTime = 20 * 60; // 8 PM = 1200 minutes
+            // Check if there's enough time before closing (18:00)
+            const closingTime = 18 * 60; // 6 PM = 1080 minutes
             const totalDuration = getTotalServicesDuration();
             const slotEnd = timeToMinutes(time) + totalDuration;
             if (slotEnd > closingTime) {
@@ -1747,7 +1754,25 @@
             document.querySelector(`.date-card[data-date="${dateStr}"]`).classList.add('selected');
 
             // Load availability for this date and manicurist
-            await checkAvailability(bookingData.manicurist.id, dateStr);
+            const resp = await fetch(`${API_BASE}/availability/${bookingData.manicurist.id}/${dateStr}`);
+            const data = await resp.json();
+            if (data.blocked) {
+                occupiedSlots = [];
+                const container = document.getElementById('time-slots');
+                container.innerHTML = `
+                    <div class="no-availability-message">
+                        <p>😔 Este día no está disponible (descanso de la manicurista).</p>
+                        <button class="btn-primary" style="max-width: 300px;" onclick="goBackFromStep(4)">
+                            ← Escoger otro día
+                        </button>
+                    </div>
+                `;
+                updateProgress(3);
+                showStep('step-time');
+                return;
+            }
+            occupiedSlots = data.occupiedSlots || [];
+            renderTimeSlots();
 
             updateProgress(3);
             showStep('step-time');
