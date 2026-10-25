@@ -443,7 +443,7 @@ router.get('/:id/unavailable-days', requireSelfOrAdmin, async (req, res) => {
         const { id } = req.params;
         const { from, to } = req.query;
 
-        let query = 'SELECT id, manicurist_id, unavailable_date, reason, created_at, created_by FROM manicurist_unavailable_days WHERE manicurist_id = ?';
+        let query = "SELECT id, manicurist_id, TO_CHAR(unavailable_date, 'YYYY-MM-DD') as unavailable_date, reason, created_at, created_by FROM manicurist_unavailable_days WHERE manicurist_id = ?";
         const params = [id];
 
         if (from) {

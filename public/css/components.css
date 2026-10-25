@@ -1192,16 +1192,32 @@ body.security-gate-active {
 }
 
 @media (max-width: 768px) {
+    .hero-section {
+        min-height: auto;
+        padding-top: 85px;
+        padding-bottom: 30px;
+    }
+
     .contact-layout {
         grid-template-columns: 1fr;
     }
 
     .hero-title {
-        font-size: 36px;
+        font-size: 32px;
+        line-height: 1.15;
+    }
+
+    .hero-subtitle {
+        font-size: 1.1rem;
+        margin: 0 auto var(--spacing-md);
+    }
+
+    .hero-buttons {
+        margin-bottom: var(--spacing-lg);
     }
 
     .booking-card {
-        padding: 24px;
+        padding: 20px 16px;
     }
 
     .progress-steps {
