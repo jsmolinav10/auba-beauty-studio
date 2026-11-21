@@ -1009,7 +1009,7 @@ function ensureBookingActionMenu() {
 
     // Cerrar al hacer clic fuera
     document.addEventListener('click', (e) => {
-        if (!menu.classList.contains('hidden') && !e.target.closest('#booking-action-menu') && !e.target.closest('.booking-card')) {
+        if (!menu.classList.contains('hidden') && !e.target.closest('#booking-action-menu') && !e.target.closest('.booking-card') && !e.target.closest('.appt-block')) {
             menu.classList.add('hidden');
             selectedBookingId = null;
         }
