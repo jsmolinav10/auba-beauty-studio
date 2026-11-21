@@ -1180,7 +1180,7 @@ async function loadServicesForBooking() {
         services.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id;
-            opt.textContent = s.name;
+            opt.textContent = s.title || s.name || 'Servicio sin nombre';
             opt.dataset.price = s.price;
             select.appendChild(opt);
         });
