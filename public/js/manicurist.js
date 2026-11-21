@@ -787,6 +787,9 @@ function renderBookingCard(booking, context) {
             <button class="action-btn confirm" data-id="${booking.id}" data-action="confirm">
                 ✓ Confirmar
             </button>
+            <button class="action-btn cancel" data-id="${booking.id}" data-action="cancel" style="background:#FF3B30; color: white;">
+                ✕ Cancelar Cita
+            </button>
         `;
     } else if (status === 'confirmed') {
         actionsHtml = `
@@ -795,6 +798,9 @@ function renderBookingCard(booking, context) {
             </button>
             <button class="action-btn no-show" data-id="${booking.id}" data-action="no_show">
                 ✗ No Asistió
+            </button>
+            <button class="action-btn cancel" data-id="${booking.id}" data-action="cancel" style="background:#FF3B30; color: white;">
+                ✕ Cancelar Cita
             </button>
         `;
     } else if (status === 'in_progress') {
@@ -921,6 +927,18 @@ function attachActionListeners() {
             btn.disabled = true;
             btn.textContent = 'Procesando...';
 
+            // Confirmación antes de cancelar
+            if (action === 'cancel') {
+                const bookingInfo = btn.closest('.booking-card');
+                const clientName = bookingInfo?.querySelector('.booking-details strong')?.textContent || 'esta clienta';
+                const timeStr = bookingInfo?.querySelector('.booking-time')?.textContent || '';
+                if (!confirm(`¿Confirmas que deseas CANCELAR la cita de ${clientName} a las ${timeStr}?\n\nEsta acción no se puede deshacer.`)) {
+                    btn.disabled = false;
+                    btn.textContent = '✕ Cancelar Cita';
+                    return;
+                }
+            }
+
             let newStatus = '';
             switch (action) {
                 case 'confirm':
@@ -934,6 +952,9 @@ function attachActionListeners() {
                     break;
                 case 'no_show':
                     newStatus = 'no_show';
+                    break;
+                case 'cancel':
+                    newStatus = 'cancelled';
                     break;
             }
 
