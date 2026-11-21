@@ -1273,6 +1273,53 @@
         .appt-block {
             cursor: pointer;
         }
+
+        /* Mobile optimizations for booking action menu */
+        @media (max-width: 768px) {
+            .booking-action-menu {
+                min-width: 160px;
+                padding: 8px 0;
+                border-radius: var(--radius-sm);
+            }
+
+            .booking-action-menu-item {
+                padding: 14px 16px;
+                font-size: 15px;
+                min-height: 48px; /* Apple/Android touch target guideline */
+                -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+            }
+
+            .booking-action-menu-item:active {
+                background: #E5E5EA;
+            }
+
+            .booking-action-icon {
+                font-size: 18px;
+            }
+
+            .appt-block,
+            .booking-card {
+                -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+            }
+
+            /* Prevent body scroll when menu is open */
+            body.menu-open {
+                overflow: hidden;
+                position: fixed;
+                width: 100%;
+            }
+        }
+
+        /* Ensure inputs have proper mobile font size to prevent iOS zoom */
+        .book-form-group input,
+        .book-form-group select {
+            font-size: 16px !important;
+        }
+
+        /* Prevent iOS auto-zoom on form inputs */
+        input, select, textarea {
+            font-size: 16px;
+        }
     </style>
 </head>
 

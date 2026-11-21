@@ -1012,6 +1012,7 @@ function ensureBookingActionMenu() {
         if (!menu.classList.contains('hidden') && !e.target.closest('#booking-action-menu') && !e.target.closest('.booking-card') && !e.target.closest('.appt-block')) {
             menu.classList.add('hidden');
             selectedBookingId = null;
+            document.body.classList.remove('menu-open');
         }
     });
 
@@ -1021,6 +1022,7 @@ function ensureBookingActionMenu() {
         if (!item) return;
         const action = item.dataset.action;
         menu.classList.add('hidden');
+        document.body.classList.remove('menu-open');
 
         if (action === 'cancel' && selectedBookingId) {
             handleCancelBooking(selectedBookingId, selectedBookingClientName, selectedBookingTime);
@@ -1093,22 +1095,38 @@ document.addEventListener('click', (e) => {
         return;
     }
 
-    // Posicionar el menú debajo del elemento
+    // Posicionar el menú debajo del elemento con protección para bordes (móvil)
     const rect = element.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
+    
+    // Usar visualViewport si está disponible (mejor para teclado móvil)
+    const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+    
     let top = rect.bottom + 8;
     let left = rect.left;
 
-    if (top + menuRect.height > window.innerHeight) {
+    // Ajustar si se sale por el borde inferior
+    if (top + menuRect.height > viewportHeight) {
         top = rect.top - menuRect.height - 8;
     }
-    if (left + menuRect.width > window.innerWidth) {
-        left = window.innerWidth - menuRect.width - 8;
+    // Ajustar si se sale por el borde superior
+    if (top < 8) {
+        top = 8;
+    }
+    // Ajustar si se sale por el borde derecho
+    if (left + menuRect.width > viewportWidth) {
+        left = viewportWidth - menuRect.width - 8;
+    }
+    // Ajustar si se sale por el borde izquierdo
+    if (left < 8) {
+        left = 8;
     }
 
     menu.style.top = `${top}px`;
     menu.style.left = `${left}px`;
     menu.classList.remove('hidden');
+    document.body.classList.add('menu-open');
 });
 
 async function handleCancelBooking(bookingId, clientName, timeStr) {
