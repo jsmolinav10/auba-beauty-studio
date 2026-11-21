@@ -1608,18 +1608,59 @@
         </div>
     </div>
 
-    <script src="js/manicurist.js"></script>
-    <script src="js/security-gate.js"></script>
+    <script src="js/manicurist.js?v=14"></script>
+    <script src="js/security-gate.js?v=14"></script>
     <script>
         window.SECURITY_GATE_PORTAL = 'manicurist';
     </script>
 
-    <!-- PWA Service Worker -->
+    <!-- PWA Service Worker con Auto-Actualización -->
     <script>
         if ('serviceWorker' in navigator) {
+            let refreshing = false;
+            // Recargar automáticamente cuando una nueva versión tome el control
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('✅ SW registrado:', reg.scope))
+                    .then(reg => {
+                        console.log('✅ SW registrado:', reg.scope);
+
+                        // 1. Forzar búsqueda de actualizaciones inmediatamente
+                        reg.update();
+
+                        // 2. Comprobar actualizaciones cada 15 minutos
+                        setInterval(() => {
+                            reg.update();
+                        }, 15 * 60 * 1000);
+
+                        // 3. Cuando la app vuelve de segundo plano en móviles
+                        document.addEventListener('visibilitychange', () => {
+                            if (document.visibilityState === 'visible') {
+                                reg.update();
+                            }
+                        });
+
+                        // 4. Activar inmediatamente si ya hay un nuevo worker esperando
+                        if (reg.waiting) {
+                            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                        }
+
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            if (!newWorker) return;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                            });
+                        });
+                    })
                     .catch(err => console.log('SW falló:', err));
             });
         }
