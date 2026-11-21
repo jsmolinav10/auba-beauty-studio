@@ -1203,6 +1203,65 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ========================================
+           CONTEXT MENU FOR BOOKING ACTIONS
+        ======================================== */
+        .context-menu {
+            position: fixed;
+            z-index: 10000;
+            background: white;
+            border: 1px solid #E5E5EA;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            min-width: 200px;
+            padding: 8px 0;
+            display: none;
+        }
+
+        .context-menu.hidden {
+            display: none !important;
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            cursor: pointer;
+            color: var(--color-text-main);
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .context-menu-item:hover {
+            background: #F5F5F8;
+        }
+
+        .context-menu-item[data-action="cancel"] {
+            color: #FF3B30;
+        }
+
+        .context-menu-item[data-action="cancel"]:hover {
+            background: #FFF0F0;
+        }
+
+        .context-menu-icon {
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .context-menu-label {
+            font-weight: 500;
+        }
+
+        /* Make booking cards right-clickable */
+        .booking-card {
+            cursor: pointer;
+        }
+
+        .booking-card.right-click-hint {
+            position: relative;
+        }
     </style>
 </head>
 
@@ -1495,6 +1554,15 @@
     <script>
         window.SECURITY_GATE_PORTAL = 'manicurist';
     </script>
+
+    <!-- Context Menu for Booking Actions -->
+    <div id="booking-context-menu" class="context-menu hidden">
+        <div class="context-menu-item" data-action="cancel">
+            <span class="context-menu-icon">✕</span>
+            <span class="context-menu-label">Cancelar Cita</span>
+        </div>
+    </div>
+
     <!-- PWA Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {

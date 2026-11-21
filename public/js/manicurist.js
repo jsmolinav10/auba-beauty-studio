@@ -8,6 +8,9 @@ const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hos
 const API_BASE = IS_LOCAL ? window.location.origin + '/api' : '/api';
 let currentManicurist = null;
 let selectedDate = null;
+let contextMenuBookingId = null;
+let contextMenuClientName = '';
+let contextMenuTime = '';
 const MANICURIST_TOKEN_KEY = 'auba_manicurist_token';
 
 // Helper para headers con auth
@@ -71,6 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup tab navigation
     setupTabs();
+
+    // Initialize context menu for booking actions
+    initContextMenu();
 });
 
 // Show Login Screen
@@ -787,9 +793,6 @@ function renderBookingCard(booking, context) {
             <button class="action-btn confirm" data-id="${booking.id}" data-action="confirm">
                 ✓ Confirmar
             </button>
-            <button class="action-btn cancel" data-id="${booking.id}" data-action="cancel" style="background:#FF3B30; color: white;">
-                ✕ Cancelar Cita
-            </button>
         `;
     } else if (status === 'confirmed') {
         actionsHtml = `
@@ -798,9 +801,6 @@ function renderBookingCard(booking, context) {
             </button>
             <button class="action-btn no-show" data-id="${booking.id}" data-action="no_show">
                 ✗ No Asistió
-            </button>
-            <button class="action-btn cancel" data-id="${booking.id}" data-action="cancel" style="background:#FF3B30; color: white;">
-                ✕ Cancelar Cita
             </button>
         `;
     } else if (status === 'in_progress') {
@@ -822,7 +822,7 @@ function renderBookingCard(booking, context) {
     }
 
     return `
-        <div class="booking-card ${status}">
+        <div class="booking-card ${status}" data-id="${booking.id}">
             <div class="booking-info">
                 <div class="booking-time">${time}</div>
                 <div class="booking-details">
@@ -980,6 +980,112 @@ function attachActionListeners() {
             }
         });
     });
+}
+
+// ============================================
+// CONTEXT MENU FOR BOOKING CANCEL
+// ============================================
+
+function initContextMenu() {
+    const menu = document.getElementById('booking-context-menu');
+    if (!menu) return;
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!menu.classList.contains('hidden') && !e.target.closest('#booking-context-menu')) {
+            menu.classList.add('hidden');
+            contextMenuBookingId = null;
+        }
+    });
+
+    // Handle menu item clicks
+    menu.addEventListener('click', (e) => {
+        const item = e.target.closest('.context-menu-item');
+        if (!item) return;
+
+        const action = item.dataset.action;
+        menu.classList.add('hidden');
+
+        if (action === 'cancel' && contextMenuBookingId) {
+            handleCancelBooking(contextMenuBookingId, contextMenuClientName, contextMenuTime);
+        }
+        contextMenuBookingId = null;
+    });
+
+    // Right-click on booking cards
+    document.addEventListener('contextmenu', (e) => {
+        const card = e.target.closest('.booking-card');
+        if (!card) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const bookingId = card.dataset.id || card.querySelector('[data-id]')?.dataset.id;
+        if (!bookingId) return;
+
+        // Get client name and time from the card
+        const clientNameEl = card.querySelector('.booking-details strong');
+        const timeEl = card.querySelector('.booking-time');
+        contextMenuClientName = clientNameEl ? clientNameEl.textContent : 'esta clienta';
+        contextMenuTime = timeEl ? timeEl.textContent : '';
+
+        // Only show cancel for pending or confirmed bookings
+        const isCancelable = card.classList.contains('pending') || card.classList.contains('confirmed');
+        const cancelItem = menu.querySelector('[data-action="cancel"]');
+
+        if (!isCancelable) {
+            menu.classList.add('hidden');
+            return;
+        }
+
+        cancelItem.style.display = 'flex';
+
+        // Position the menu
+        const rect = card.getBoundingClientRect();
+        const menuRect = menu.getBoundingClientRect();
+        let top = e.clientY;
+        let left = e.clientX;
+
+        // Adjust if menu would go off-screen
+        if (top + menuRect.height > window.innerHeight) {
+            top = window.innerHeight - menuRect.height - 8;
+        }
+        if (left + menuRect.width > window.innerWidth) {
+            left = window.innerWidth - menuRect.width - 8;
+        }
+
+        menu.style.top = `${top}px`;
+        menu.style.left = `${left}px`;
+        menu.classList.remove('hidden');
+
+        // Store booking ID on the menu for the click handler
+        menu.dataset.bookingId = bookingId;
+    });
+}
+
+async function handleCancelBooking(bookingId, clientName, timeStr) {
+    if (!confirm(`¿Confirmas que deseas CANCELAR la cita de ${clientName} a las ${timeStr}?\n\nEsta acción no se puede deshacer.`)) {
+        return;
+    }
+
+    try {
+        const response = await authFetch(`${API_BASE}/manicurists/${currentManicurist.id}/bookings/${bookingId}/status`, {
+            method: 'PUT',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ status: 'cancelled' })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            refreshAllViews();
+        } else {
+            alert('Error: ' + (result.error || 'No se pudo cancelar la cita'));
+        }
+    } catch (error) {
+        console.error('Error canceling booking:', error);
+        alert('Error de conexión al cancelar la cita');
+    }
 }
 
 // Helper to refresh all views
