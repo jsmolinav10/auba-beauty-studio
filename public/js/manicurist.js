@@ -1180,7 +1180,8 @@ async function loadServicesForBooking() {
         services.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id;
-            opt.textContent = `${s.name} — $${Number(s.price).toLocaleString('es-CO')}`;
+            opt.textContent = s.name;
+            opt.dataset.price = s.price;
             select.appendChild(opt);
         });
     } catch (e) {
@@ -1494,8 +1495,17 @@ function initBookingTab() {
     // Date change → load times
     document.getElementById('book-date').addEventListener('change', loadAvailableTimes);
 
-    // Service change → validate
-    document.getElementById('book-service').addEventListener('change', validateBookForm);
+    // Service change → validate and show price
+    document.getElementById('book-service').addEventListener('change', function () {
+        validateBookForm();
+        const opt = this.selectedOptions[0];
+        const priceEl = document.getElementById('book-service-price');
+        if (opt && opt.dataset.price) {
+            priceEl.textContent = '$' + Number(opt.dataset.price).toLocaleString('es-CO');
+        } else {
+            priceEl.textContent = '';
+        }
+    });
 
     // Submit button
     document.getElementById('btn-book-submit').addEventListener('click', submitBooking);
