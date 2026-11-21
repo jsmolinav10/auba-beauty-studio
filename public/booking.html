@@ -1492,7 +1492,7 @@
             container.innerHTML = services.map(s => `
                 <div class="service-selection-card" data-id="${s.id}">
                     <div class="service-selection-header">
-                        <h3>${s.title}</h3>
+                        <h3>${s.title || s.name || 'Servicio sin nombre'}</h3>
                         <span class="service-selection-price">$${Number(s.price).toLocaleString('es-CO')}</span>
                     </div>
                     <p class="service-selection-duration">Duración: ${s.duration} min</p>

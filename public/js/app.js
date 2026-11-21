@@ -56,12 +56,18 @@ function initServices() {
     fetch(`${API_BASE}/services`)
         .then(res => res.json())
         .then(data => {
-            const services = data.map(s => ({
-                id: s.id,
-                title: s.title,
-                price: `$${Number(s.price).toLocaleString('es-CO')}`,
-                description: s.description
-            }));
+            const services = data.map(s => {
+                const displayName = s.title || s.name || 'Servicio sin nombre';
+                if (!s.title && !s.name) {
+                    console.warn('[app.js] Servicio sin nombre:', s);
+                }
+                return {
+                    id: s.id,
+                    title: displayName,
+                    price: `$${Number(s.price || 0).toLocaleString('es-CO')}`,
+                    description: s.description || ''
+                };
+            });
             renderServices(list, services);
         })
         .catch(() => {

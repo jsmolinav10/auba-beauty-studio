@@ -10,6 +10,27 @@ let currentManicurist = null;
 let selectedDate = null;
 const MANICURIST_TOKEN_KEY = 'auba_manicurist_token';
 
+// =============================================
+// NORMALIZE SERVICE HELPER
+// =============================================
+// Centraliza como se lee el nombre de un servicio del API.
+// La tabla `services` usa la columna `title`, no `name`.
+// Este helper previene opciones vacias en el UI si un campo falta.
+function normalizeService(service) {
+    if (!service || typeof service !== 'object') {
+        console.warn('[normalizeService] Servicio invalido:', service);
+        return { id: null, displayName: 'Servicio sin nombre', price: 0, duration: 60 };
+    }
+    const id = service.id;
+    const displayName = service.title || service.name || 'Servicio sin nombre';
+    const price = Number(service.price || 0);
+    const duration = Number(service.duration || 60);
+    if (!service.title && !service.name) {
+        console.warn('[normalizeService] Servicio sin nombre detectado:', service);
+    }
+    return { id, displayName, price, duration };
+}
+
 // Helper para headers con auth
 function authHeaders(extra = {}) {
     const token = localStorage.getItem(MANICURIST_TOKEN_KEY);
@@ -1196,10 +1217,12 @@ async function loadServicesForBooking() {
 
         const services = Array.isArray(data) ? data : (data.services || []);
         services.forEach(s => {
+            const svc = normalizeService(s);
+            if (!svc.id) return; // Skip invalid services
             const opt = document.createElement('option');
-            opt.value = s.id;
-            opt.textContent = s.title || s.name || 'Servicio sin nombre';
-            opt.dataset.price = s.price;
+            opt.value = svc.id;
+            opt.textContent = svc.displayName;
+            opt.dataset.price = svc.price;
             select.appendChild(opt);
         });
     } catch (e) {
