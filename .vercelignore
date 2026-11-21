@@ -1,0 +1,8 @@
+node_modules
+.kilo
+.git
+tests
+.env*
+*.log
+graphify-out
+uploads

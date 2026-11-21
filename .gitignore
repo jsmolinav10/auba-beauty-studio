@@ -18,3 +18,6 @@ schema.json
 
 .vercel
 .env*
+
+.kilo/
+
