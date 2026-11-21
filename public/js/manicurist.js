@@ -8,9 +8,6 @@ const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hos
 const API_BASE = IS_LOCAL ? window.location.origin + '/api' : '/api';
 let currentManicurist = null;
 let selectedDate = null;
-let contextMenuBookingId = null;
-let contextMenuClientName = '';
-let contextMenuTime = '';
 const MANICURIST_TOKEN_KEY = 'auba_manicurist_token';
 
 // Helper para headers con auth
@@ -74,9 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup tab navigation
     setupTabs();
-
-    // Initialize context menu for booking actions
-    initContextMenu();
 });
 
 // Show Login Screen
@@ -983,88 +977,125 @@ function attachActionListeners() {
 }
 
 // ============================================
-// CONTEXT MENU FOR BOOKING CANCEL
+// BOOKING ACTION MENU (CLICK NORMAL)
+// Muestra opciones de Eliminar y Reagendar al hacer clic en una cita
 // ============================================
 
-function initContextMenu() {
-    const menu = document.getElementById('booking-context-menu');
-    if (!menu) return;
+let selectedBookingId = null;
+let selectedBookingClientName = '';
+let selectedBookingTime = '';
 
-    // Close menu when clicking outside
+// Crea el menú de acciones dinámicamente si no existe
+function ensureBookingActionMenu() {
+    if (document.getElementById('booking-action-menu')) return;
+    const menu = document.createElement('div');
+    menu.id = 'booking-action-menu';
+    menu.className = 'booking-action-menu hidden';
+    menu.innerHTML = `
+        <div class="booking-action-menu-item" data-action="cancel">
+            <span class="booking-action-icon">✕</span>
+            <span class="booking-action-label">Eliminar Cita</span>
+        </div>
+        <div class="booking-action-menu-item" data-action="reschedule">
+            <span class="booking-action-icon">📅</span>
+            <span class="booking-action-label">Reagendar Cita</span>
+        </div>
+    `;
+    document.body.appendChild(menu);
+
+    // Cerrar al hacer clic fuera
     document.addEventListener('click', (e) => {
-        if (!menu.classList.contains('hidden') && !e.target.closest('#booking-context-menu')) {
+        if (!menu.classList.contains('hidden') && !e.target.closest('#booking-action-menu') && !e.target.closest('.booking-card')) {
             menu.classList.add('hidden');
-            contextMenuBookingId = null;
+            selectedBookingId = null;
         }
     });
 
-    // Handle menu item clicks
+    // Manejar clics en items del menú
     menu.addEventListener('click', (e) => {
-        const item = e.target.closest('.context-menu-item');
+        const item = e.target.closest('.booking-action-menu-item');
         if (!item) return;
-
         const action = item.dataset.action;
         menu.classList.add('hidden');
 
-        if (action === 'cancel' && contextMenuBookingId) {
-            handleCancelBooking(contextMenuBookingId, contextMenuClientName, contextMenuTime);
+        if (action === 'cancel' && selectedBookingId) {
+            handleCancelBooking(selectedBookingId, selectedBookingClientName, selectedBookingTime);
+        } else if (action === 'reschedule' && selectedBookingId) {
+            handleRescheduleBooking(selectedBookingId);
         }
-        contextMenuBookingId = null;
-    });
-
-    // Right-click on booking cards
-    document.addEventListener('contextmenu', (e) => {
-        const card = e.target.closest('.booking-card');
-        if (!card) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        const bookingId = card.dataset.id || card.querySelector('[data-id]')?.dataset.id;
-        if (!bookingId) return;
-
-        // Get client name and time from the card
-        const clientNameEl = card.querySelector('.booking-details strong');
-        const timeEl = card.querySelector('.booking-time');
-        contextMenuClientName = clientNameEl ? clientNameEl.textContent : 'esta clienta';
-        contextMenuTime = timeEl ? timeEl.textContent : '';
-
-        // Only show cancel for pending or confirmed bookings
-        const isCancelable = card.classList.contains('pending') || card.classList.contains('confirmed');
-        const cancelItem = menu.querySelector('[data-action="cancel"]');
-
-        if (!isCancelable) {
-            menu.classList.add('hidden');
-            return;
-        }
-
-        cancelItem.style.display = 'flex';
-
-        // Position the menu
-        const rect = card.getBoundingClientRect();
-        const menuRect = menu.getBoundingClientRect();
-        let top = e.clientY;
-        let left = e.clientX;
-
-        // Adjust if menu would go off-screen
-        if (top + menuRect.height > window.innerHeight) {
-            top = window.innerHeight - menuRect.height - 8;
-        }
-        if (left + menuRect.width > window.innerWidth) {
-            left = window.innerWidth - menuRect.width - 8;
-        }
-
-        menu.style.top = `${top}px`;
-        menu.style.left = `${left}px`;
-        menu.classList.remove('hidden');
-
-        // Store booking ID on the menu for the click handler
-        menu.dataset.bookingId = bookingId;
+        selectedBookingId = null;
     });
 }
 
+// Abrir menú de acciones al hacer clic en una tarjeta de cita
+document.addEventListener('click', (e) => {
+    // No abrir menú si se hizo clic en un botón de acción existente
+    if (e.target.closest('.action-btn')) return;
+
+    const card = e.target.closest('.booking-card');
+    if (!card) return;
+
+    const bookingId = card.dataset.id;
+    if (!bookingId) return;
+
+    const status = card.classList.contains('pending') ? 'pending' :
+                   card.classList.contains('confirmed') ? 'confirmed' :
+                   card.classList.contains('completed') ? 'completed' :
+                   card.classList.contains('in_progress') ? 'in_progress' : '';
+
+    const clientNameEl = card.querySelector('.booking-details strong');
+    const timeEl = card.querySelector('.booking-time');
+    selectedBookingId = bookingId;
+    selectedBookingClientName = clientNameEl ? clientNameEl.textContent : 'esta clienta';
+    selectedBookingTime = timeEl ? timeEl.textContent : '';
+
+    ensureBookingActionMenu();
+    const menu = document.getElementById('booking-action-menu');
+
+    // Solo mostrar opciones relevantes según el estado
+    const cancelItem = menu.querySelector('[data-action="cancel"]');
+    const rescheduleItem = menu.querySelector('[data-action="reschedule"]');
+
+    // Cancelar solo para pending y confirmed
+    if (status === 'pending' || status === 'confirmed') {
+        cancelItem.style.display = 'flex';
+    } else {
+        cancelItem.style.display = 'none';
+    }
+
+    // Reagendar solo para pending y confirmed
+    if (status === 'pending' || status === 'confirmed') {
+        rescheduleItem.style.display = 'flex';
+    } else {
+        rescheduleItem.style.display = 'none';
+    }
+
+    // Si no hay opciones disponibles, no mostrar menú
+    if (cancelItem.style.display === 'none' && rescheduleItem.style.display === 'none') {
+        selectedBookingId = null;
+        return;
+    }
+
+    // Posicionar el menú debajo de la tarjeta
+    const rect = card.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    let top = rect.bottom + 8;
+    let left = rect.left;
+
+    if (top + menuRect.height > window.innerHeight) {
+        top = rect.top - menuRect.height - 8;
+    }
+    if (left + menuRect.width > window.innerWidth) {
+        left = window.innerWidth - menuRect.width - 8;
+    }
+
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
+    menu.classList.remove('hidden');
+});
+
 async function handleCancelBooking(bookingId, clientName, timeStr) {
-    if (!confirm(`¿Confirmas que deseas CANCELAR la cita de ${clientName} a las ${timeStr}?\n\nEsta acción no se puede deshacer.`)) {
+    if (!confirm(`¿Estás seguro que quieres eliminar la cita de ${clientName} a las ${timeStr}?\n\nEsta acción no se puede deshacer.`)) {
         return;
     }
 
@@ -1080,11 +1111,23 @@ async function handleCancelBooking(bookingId, clientName, timeStr) {
         if (result.success) {
             refreshAllViews();
         } else {
-            alert('Error: ' + (result.error || 'No se pudo cancelar la cita'));
+            alert('Error: ' + (result.error || 'No se pudo eliminar la cita'));
         }
     } catch (error) {
         console.error('Error canceling booking:', error);
-        alert('Error de conexión al cancelar la cita');
+        alert('Error de conexión al eliminar la cita');
+    }
+}
+
+function handleRescheduleBooking(bookingId) {
+    // Abrir el modal de reagendamiento existente si está disponible
+    const modal = document.getElementById('reschedule-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Guardar el ID de la cita para reagendar
+        modal.dataset.bookingId = bookingId;
+    } else {
+        alert('Función de reagendamiento no disponible en esta vista.');
     }
 }
 
