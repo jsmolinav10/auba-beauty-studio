@@ -9,6 +9,9 @@ const AdminApp = {
     SESSION_KEY: 'auba_admin_session',
     TOKEN_KEY: 'auba_admin_token',
     currentSection: 'dashboard',
+    calendarYear: new Date().getFullYear(),
+    calendarMonth: new Date().getMonth() + 1,
+    calendarSelectedDate: null,
 
     // ============================================
     // INITIALIZATION
@@ -125,6 +128,7 @@ const AdminApp = {
         const titles = {
             dashboard: 'Dashboard',
             bookings: 'Reservas',
+            calendar: 'Calendario',
             services: 'Servicios',
             manicurists: 'Manicuristas',
             users: 'Clientes',
@@ -147,6 +151,9 @@ const AdminApp = {
                 break;
             case 'bookings':
                 this.loadBookings();
+                break;
+            case 'calendar':
+                this.loadCalendar();
                 break;
             case 'services':
                 this.loadServices();
@@ -272,6 +279,185 @@ const AdminApp = {
             `}).join('');
         } catch (error) {
             console.error('Error loading upcoming bookings:', error);
+        }
+    },
+
+    // ============================================
+    // CALENDAR
+    // ============================================
+
+    async loadCalendar() {
+        const today = new Date();
+        this.calendarYear = today.getFullYear();
+        this.calendarMonth = today.getMonth() + 1;
+        this.calendarSelectedDate = null;
+        document.getElementById('calendar-day-detail')?.classList.add('hidden');
+        await this.renderCalendarView();
+    },
+
+    async renderCalendarView() {
+        try {
+            const response = await this.authFetch(
+                `${this.API_BASE}/admin/bookings/month-summary?year=${this.calendarYear}&month=${this.calendarMonth}`
+            );
+            const summary = await response.json();
+
+            const bookingsByDate = {};
+            summary.forEach(item => {
+                bookingsByDate[item.booking_date] = item.count;
+            });
+
+            this.renderCalendar(this.calendarYear, this.calendarMonth, bookingsByDate);
+        } catch (error) {
+            console.error('Error loading calendar:', error);
+        }
+    },
+
+    calendarPrevMonth() {
+        this.calendarMonth--;
+        if (this.calendarMonth < 1) {
+            this.calendarMonth = 12;
+            this.calendarYear--;
+        }
+        this.calendarSelectedDate = null;
+        document.getElementById('calendar-day-detail')?.classList.add('hidden');
+        this.renderCalendarView();
+    },
+
+    calendarNextMonth() {
+        this.calendarMonth++;
+        if (this.calendarMonth > 12) {
+            this.calendarMonth = 1;
+            this.calendarYear++;
+        }
+        this.calendarSelectedDate = null;
+        document.getElementById('calendar-day-detail')?.classList.add('hidden');
+        this.renderCalendarView();
+    },
+
+    calendarGoToToday() {
+        const today = new Date();
+        this.calendarYear = today.getFullYear();
+        this.calendarMonth = today.getMonth() + 1;
+        this.calendarSelectedDate = null;
+        document.getElementById('calendar-day-detail')?.classList.add('hidden');
+        this.renderCalendarView();
+    },
+
+    renderCalendar(year, month, bookingsByDate) {
+        const monthNames = [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+        const weekdayNames = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+
+        document.getElementById('calendar-month-year').textContent = `${monthNames[month - 1]} ${year}`;
+
+        const grid = document.getElementById('calendar-grid');
+        grid.innerHTML = '';
+
+        // Weekday headers
+        weekdayNames.forEach(wd => {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-weekday';
+            cell.textContent = wd;
+            grid.appendChild(cell);
+        });
+
+        const firstDay = new Date(year, month - 1, 1);
+        const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const today = new Date();
+        const isToday = (d, m, y) => d === today.getDate() && m === today.getMonth() + 1 && y === today.getFullYear();
+        const isSelected = (d, m, y) => this.calendarSelectedDate &&
+            d === this.calendarSelectedDate.getDate() &&
+            m === this.calendarSelectedDate.getMonth() + 1 &&
+            y === this.calendarSelectedDate.getFullYear();
+
+        // Empty cells before first day (getDay: 0=Sun, we want Mon=0..Sun=6)
+        const offset = (startingDayOfWeek + 6) % 7;
+        for (let i = 0; i < offset; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-day empty';
+            grid.appendChild(cell);
+        }
+
+        // Day cells
+        for (let day = 1; day <= daysInMonth; day++) {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-day';
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const count = bookingsByDate[dateStr] || 0;
+
+            if (count > 0) cell.classList.add('has-bookings');
+            if (isToday(day, month, year)) cell.classList.add('today');
+            if (isSelected(day, month, year)) cell.classList.add('today');
+
+            cell.innerHTML = `
+                <div class="calendar-day-number">${day}</div>
+                ${count > 0 ? `<div class="calendar-booking-count">${count}</div>` : ''}
+            `;
+
+            cell.addEventListener('click', () => {
+                this.calendarSelectedDate = new Date(year, month - 1, day);
+                document.querySelectorAll('#calendar-grid .calendar-day').forEach(c => c.classList.remove('today'));
+                if (isToday(day, month, year)) cell.classList.add('today');
+                cell.classList.add('today');
+                this.loadDayBookings(dateStr);
+            });
+
+            grid.appendChild(cell);
+        }
+    },
+
+    async loadDayBookings(dateStr) {
+        try {
+            const response = await this.authFetch(`${this.API_BASE}/admin/bookings?date=${dateStr}`);
+            const bookings = await response.json();
+
+            const title = document.getElementById('calendar-day-title');
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            title.textContent = `Citas del ${dateObj.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}`;
+
+            const container = document.getElementById('calendar-day-bookings');
+            const detailPanel = document.getElementById('calendar-day-detail');
+
+            if (bookings.length === 0) {
+                container.innerHTML = '<p class="empty-text">No hay citas programadas para este día.</p>';
+            } else {
+                container.innerHTML = bookings.map(b => {
+                    const timeStr = b.booking_time?.substring(0, 5) || '';
+                    return `
+                    <div class="calendar-day-booking">
+                        <div class="calendar-day-booking-time">${timeStr}</div>
+                        <div class="calendar-day-booking-info">
+                            <span class="calendar-day-booking-client">${b.client_name}</span>
+                            <span class="calendar-day-booking-service">${b.service_title}</span>
+                            <span class="calendar-day-booking-manicurist">${b.manicurist_name}</span>
+                        </div>
+                        <span class="status-badge status-${b.status}">${this.getStatusLabel(b.status)}</span>
+                    </div>
+                    `;
+                }).join('');
+            }
+
+            detailPanel.classList.remove('hidden');
+        } catch (error) {
+            console.error('Error loading day bookings:', error);
+        }
+    },
+
+    calendarHideDayDetail() {
+        document.getElementById('calendar-day-detail').classList.add('hidden');
+        this.calendarSelectedDate = null;
+        document.querySelectorAll('#calendar-grid .calendar-day').forEach(c => c.classList.remove('today'));
+        const today = new Date();
+        const isCurrentMonth = today.getFullYear() === this.calendarYear && today.getMonth() + 1 === this.calendarMonth;
+        if (isCurrentMonth) {
+            document.querySelectorAll('#calendar-grid .calendar-day').forEach(c => {
+                const num = parseInt(c.querySelector('.calendar-day-number')?.textContent || '0');
+                if (num === today.getDate()) c.classList.add('today');
+            });
         }
     },
 
@@ -708,7 +894,7 @@ const AdminApp = {
     },
 
     exportBookings() {
-        // Simple CSV export
+        // Simple CSV export from visible table
         const table = document.getElementById('bookings-table');
         if (!table) return;
 
@@ -726,6 +912,60 @@ const AdminApp = {
         a.href = url;
         a.download = `reservas_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
+    },
+
+    async exportBookingsAll() {
+        // Fetch ALL bookings from the API (no limit) and export to CSV with Excel-compatible BOM
+        try {
+            const response = await this.authFetch(`${this.API_BASE}/admin/bookings`);
+            const bookings = await response.json();
+
+            if (!bookings || bookings.length === 0) {
+                alert('No hay reservas para exportar.');
+                return;
+            }
+
+            const headers = ['ID', 'Cliente', 'Teléfono', 'Servicio', 'Manicurista', 'Fecha', 'Hora', 'Estado', 'Pago', 'Monto'];
+            const rows = [headers.join(',')];
+
+            bookings.forEach(b => {
+                const escapeCsv = (val) => {
+                    const s = String(val == null ? '' : val);
+                    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+                        return '"' + s.replace(/"/g, '""') + '"';
+                    }
+                    return s;
+                };
+                const dateFmt = b.booking_date ? new Date(b.booking_date + 'T00:00:00').toLocaleDateString('es-CO') : '-';
+                const timeStr = b.booking_time ? b.booking_time.substring(0, 5) : '-';
+                const payment = b.payment_status || 'unpaid';
+                const amount = b.payment_amount > 0 ? this.formatPrice(b.payment_amount) : '-';
+                rows.push([
+                    escapeCsv(b.id),
+                    escapeCsv(b.client_name),
+                    escapeCsv(b.client_phone),
+                    escapeCsv(b.service_title),
+                    escapeCsv(b.manicurist_name),
+                    escapeCsv(dateFmt),
+                    escapeCsv(timeStr),
+                    escapeCsv(this.getStatusLabel(b.status)),
+                    escapeCsv(payment),
+                    escapeCsv(amount)
+                ].join(','));
+            });
+
+            // UTF-8 BOM for Excel compatibility
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `reservas_todas_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        } catch (error) {
+            console.error('Error exporting all bookings:', error);
+            alert('Error al exportar reservas');
+        }
     },
 
     closeModal() {

@@ -736,8 +736,170 @@ body {
 }
 
 /* ============================================
-   RESPONSIVE
+   CALENDAR
    ============================================ */
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.calendar-nav .btn-icon {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--color-text-main);
+    transition: all 0.2s;
+}
+
+.calendar-nav .btn-icon:hover {
+    background: var(--color-bg);
+    border-color: var(--color-accent);
+}
+
+.calendar-wrapper {
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.calendar-weekday {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    padding: 8px 4px;
+    text-transform: uppercase;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--color-text-main);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+    position: relative;
+    padding: 4px;
+}
+
+.calendar-day.empty {
+    cursor: default;
+    background: transparent;
+}
+
+.calendar-day:not(.empty):hover {
+    background: var(--color-accent-light);
+}
+
+.calendar-day.today {
+    background: var(--color-accent);
+    color: var(--color-sidebar);
+    font-weight: 600;
+    border-radius: 50%;
+}
+
+.calendar-day.has-bookings {
+    background: rgba(212, 175, 55, 0.15);
+}
+
+.calendar-day-number {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.calendar-booking-count {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: var(--color-sidebar);
+    font-weight: 700;
+}
+
+.calendar-day-detail {
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-top: 24px;
+    padding: 24px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.calendar-day-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.calendar-day-booking {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    border-left: 3px solid var(--color-accent);
+}
+
+.calendar-day-booking-time {
+    font-weight: 600;
+    color: var(--color-text-main);
+    min-width: 60px;
+}
+
+.calendar-day-booking-info {
+    flex: 1;
+    margin: 0 12px;
+    color: var(--color-text-secondary);
+}
+
+.calendar-day-booking-client {
+    font-weight: 600;
+    color: var(--color-text-main);
+    display: block;
+    margin-bottom: 2px;
+}
+
+.calendar-day-booking-service,
+.calendar-day-booking-manicurist {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    display: block;
+}
 
 @media (max-width: 1024px) {
     .dashboard-grid {

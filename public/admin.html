@@ -37,6 +37,10 @@
                 <span class="nav-icon">📅</span>
                 Reservas
             </a>
+            <a href="#" class="nav-item" data-section="calendar">
+                <span class="nav-icon">📆</span>
+                Calendario
+            </a>
             <a href="#" class="nav-item" data-section="services">
                 <span class="nav-icon">💅</span>
                 Servicios
@@ -169,6 +173,7 @@
                         <option value="completed">Completada</option>
                         <option value="cancelled">Cancelada</option>
                     </select>
+                    <button class="btn-primary" onclick="AdminApp.exportBookingsAll()">📥 Exportar Todo (Excel)</button>
                 </div>
             </div>
             <div class="table-container">
@@ -189,6 +194,33 @@
                         <!-- Populated by JS -->
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- Calendar Section -->
+        <section id="calendar-section" class="content-section hidden">
+            <div class="section-header-row">
+                <h2>Calendario de Citas</h2>
+                <div class="calendar-nav">
+                    <button class="btn-icon" onclick="AdminApp.calendarPrevMonth()" title="Mes anterior">◀</button>
+                    <span id="calendar-month-year" style="font-weight: 600; font-size: 1.1rem;">Noviembre 2026</span>
+                    <button class="btn-icon" onclick="AdminApp.calendarGoToToday()" title="Hoy">Hoy</button>
+                    <button class="btn-icon" onclick="AdminApp.calendarNextMonth()" title="Mes siguiente">▶</button>
+                </div>
+            </div>
+            <div class="calendar-wrapper">
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <div id="calendar-day-detail" class="calendar-day-detail hidden">
+                <div class="section-header-row" style="margin-bottom: 16px;">
+                    <h3 id="calendar-day-title">Citas del 20 de noviembre</h3>
+                    <button class="btn-icon" onclick="AdminApp.calendarHideDayDetail()" title="Cerrar">✕</button>
+                </div>
+                <div id="calendar-day-bookings" class="calendar-day-list">
+                    <!-- Populated by JS -->
+                </div>
             </div>
         </section>
 

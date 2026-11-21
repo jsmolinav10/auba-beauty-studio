@@ -83,6 +83,30 @@ router.get('/bookings/upcoming', async (req, res) => {
     }
 });
 
+router.get('/bookings/month-summary', async (req, res) => {
+    try {
+        const pool = req.app.locals.pool;
+        const year = parseInt(req.query.year) || new Date().getFullYear();
+        const month = parseInt(req.query.month) || new Date().getMonth() + 1;
+
+        const [rows] = await pool.execute(`
+            SELECT 
+                TO_CHAR(booking_date, 'YYYY-MM-DD') as booking_date,
+                COUNT(*)::int as count
+            FROM bookings
+            WHERE EXTRACT(YEAR FROM booking_date) = $1
+            AND EXTRACT(MONTH FROM booking_date) = $2
+            GROUP BY booking_date
+            ORDER BY booking_date
+        `, [year, month]);
+
+        res.json(rows);
+    } catch (error) {
+        console.error('Error getting month summary:', error);
+        res.status(500).json({ error: 'Error del servidor' });
+    }
+});
+
 router.get('/bookings', async (req, res) => {
     try {
         const pool = req.app.locals.pool;
