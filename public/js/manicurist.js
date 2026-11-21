@@ -562,6 +562,10 @@ function renderTimeGrid(bookings) {
 
         const block = document.createElement('div');
         block.className = 'appt-block';
+        block.dataset.id = b.id;
+        block.dataset.status = b.status || 'pending';
+        block.dataset.clientName = b.client_name || 'Clienta';
+        block.dataset.time = timeStr;
         block.style.top        = `${topPx}px`;
         block.style.height     = `${heightPx}px`;
         block.style.background = color.bg;
@@ -1027,27 +1031,40 @@ function ensureBookingActionMenu() {
     });
 }
 
-// Abrir menú de acciones al hacer clic en una tarjeta de cita
+// Abrir menú de acciones al hacer clic en una tarjeta de cita o bloque de agenda
 document.addEventListener('click', (e) => {
     // No abrir menú si se hizo clic en un botón de acción existente
     if (e.target.closest('.action-btn')) return;
 
+    // Soportar tanto booking-card (listas) como appt-block (agenda time grid)
     const card = e.target.closest('.booking-card');
-    if (!card) return;
+    const block = e.target.closest('.appt-block');
+    const element = card || block;
 
-    const bookingId = card.dataset.id;
+    if (!element) return;
+
+    const bookingId = element.dataset.id;
     if (!bookingId) return;
 
-    const status = card.classList.contains('pending') ? 'pending' :
-                   card.classList.contains('confirmed') ? 'confirmed' :
-                   card.classList.contains('completed') ? 'completed' :
-                   card.classList.contains('in_progress') ? 'in_progress' : '';
+    const status = element.dataset.status ||
+                   (element.classList.contains('pending') ? 'pending' :
+                    element.classList.contains('confirmed') ? 'confirmed' :
+                    element.classList.contains('completed') ? 'completed' :
+                    element.classList.contains('in_progress') ? 'in_progress' : '');
 
-    const clientNameEl = card.querySelector('.booking-details strong');
-    const timeEl = card.querySelector('.booking-time');
+    // Obtener nombre de cliente y hora según el tipo de elemento
+    let clientNameEl, timeEl;
+    if (card) {
+        clientNameEl = card.querySelector('.booking-details strong');
+        timeEl = card.querySelector('.booking-time');
+    } else {
+        clientNameEl = element.querySelector('.appt-block-title');
+        timeEl = element.querySelector('.appt-block-time');
+    }
+
     selectedBookingId = bookingId;
-    selectedBookingClientName = clientNameEl ? clientNameEl.textContent : 'esta clienta';
-    selectedBookingTime = timeEl ? timeEl.textContent : '';
+    selectedBookingClientName = clientNameEl ? clientNameEl.textContent.replace(/ - .*/, '') : 'esta clienta';
+    selectedBookingTime = timeEl ? timeEl.textContent.split(' · ')[0] : '';
 
     ensureBookingActionMenu();
     const menu = document.getElementById('booking-action-menu');
@@ -1076,8 +1093,8 @@ document.addEventListener('click', (e) => {
         return;
     }
 
-    // Posicionar el menú debajo de la tarjeta
-    const rect = card.getBoundingClientRect();
+    // Posicionar el menú debajo del elemento
+    const rect = element.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
     let top = rect.bottom + 8;
     let left = rect.left;
